@@ -1,0 +1,35 @@
+name: CI (Tauri App)
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    paths-ignore:
+      - 'Dockerfile' # Dockerfileの変更時はスキップ
+  pull_request: {}
+
+jobs:
+  build-tauri:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/imakuma-ryoichi/tauri-builder:latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Rust Linter & Test
+        run: |
+          cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+          cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
+          cargo test --manifest-path src-tauri/Cargo.toml
+
+      # Node.jsとRustが揃った環境なのでそのままビルド
+      - name: Build Tauri App
+        run: npm run tauri build
