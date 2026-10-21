@@ -22,7 +22,7 @@ jobs:
           corepack enable
           corepack prepare pnpm@latest --activate
 
-      # 2. toeic-typing-app 配下で依存関係インストール
+      # 2. フロントエンド依存関係のインストール
       - name: Install Frontend Dependencies
         working-directory: ./toeic-typing-app
         run: pnpm install --frozen-lockfile
@@ -33,7 +33,11 @@ jobs:
         with:
           workspaces: './toeic-typing-app/src-tauri -> target'
 
-      # 4. Rust コードの静的解析・テスト
+      # 4. 必要な Rust コンポーネント（rustfmt, clippy）を追加
+      - name: Add Rust components
+        run: rustup component add rustfmt clippy
+
+      # 5. Rust コードの静的解析・テスト
       - name: Rust Linter & Test
         working-directory: ./toeic-typing-app
         run: |
@@ -41,7 +45,7 @@ jobs:
           cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
           cargo test --manifest-path src-tauri/Cargo.toml
 
-      # 5. Tauri のビルド
+      # 6. Tauri のビルド
       - name: Build Tauri App
         working-directory: ./toeic-typing-app
         run: pnpm tauri build
