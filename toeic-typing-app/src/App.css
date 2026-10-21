@@ -114,3 +114,30 @@ button {
     background-color: #0f0f0f69;
   }
 }
+
+/* --- タイピングアプリ用に追加 --- */
+.word-display {
+  margin: 1.5rem 0;
+  padding: 1.5rem 2rem;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: inline-block;
+}
+
+.word-display h2 {
+  font-size: 2.5rem;
+  margin: 0;
+  letter-spacing: 2px;
+  color: #396cd8;
+}
+
+/* ダークモード時の単語表示枠 */
+@media (prefers-color-scheme: dark) {
+  .word-display {
+    background-color: #1a1a1a;
+  }
+  .word-display h2 {
+    color: #24c8db;
+  }
+}
