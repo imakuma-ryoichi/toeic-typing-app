@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main", "master" ]
     paths-ignore:
-      - 'Dockerfile' # Dockerfileの変更時はスキップ
+      - 'Dockerfile'
   pull_request: {}
 
 jobs:
@@ -16,20 +16,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Frontend Dependencies
-        run: npm ci
+      # 1. pnpm の有効化
+      - name: Setup pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
 
+      # 2. フロントエンド依存関係のインストール
+      - name: Install Frontend Dependencies
+        working-directory: ./toeic-typing-app
+        run: pnpm install --frozen-lockfile
+
+      # 3. Rust のキャッシュ設定
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: './toeic-typing-app/src-tauri -> target'
 
+      # 4. 必要な Rust コンポーネント（rustfmt, clippy）を追加
+      - name: Add Rust components
+        run: rustup component add rustfmt clippy
+
+      # 5. Rust コードの静的解析・テスト
       - name: Rust Linter & Test
+        working-directory: ./toeic-typing-app
         run: |
           cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
           cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
           cargo test --manifest-path src-tauri/Cargo.toml
 
-      # Node.jsとRustが揃った環境なのでそのままビルド
+      # 6. Tauri のビルド
       - name: Build Tauri App
-        run: npm run tauri build
+        working-directory: ./toeic-typing-app
+        run: pnpm tauri build

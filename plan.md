@@ -70,3 +70,5 @@
     isCorrect: boolean;// 正誤判定
     timestamp: number; // 押下時刻（ミリ秒）
   }
+
+追加予定
