@@ -1,5 +1,8 @@
-# 安定版Rust
-FROM rust:1.77-bookworm
+# 最新の安定版Rustを使用する
+FROM rust:latest
+
+# フォーマットと静的解析ツールをイメージに組み込んでおく
+RUN rustup component add rustfmt clippy
 
 # Node.js (v20) のインストール
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
