@@ -5,9 +5,13 @@ on:
     branches: [ "main", "master" ]
   pull_request: {}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # ---------------------------------------------------
-  # ジョブ1: Dockerfileに変更があればビルド、なければスキップ
+  # ジョブ1: Dockerfile の変更検知とビルド
   # ---------------------------------------------------
   prepare-image:
     runs-on: ubuntu-latest
@@ -29,15 +33,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Dockerfile の中身のハッシュ値から一意のタグ名を生成
       - name: Generate Image Tag
         id: meta
         run: |
           HASH=$(sha256sum Dockerfile | cut -c1-16)
-          # 小文字のユーザー名を指定（imakuma-ryoichi）
           echo "tag=ghcr.io/imakuma-ryoichi/tauri-builder:${HASH}" >> $GITHUB_OUTPUT
 
-      # キャッシュを活用し、中身が変わっていなければ数秒でスキップ
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -48,44 +49,69 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ---------------------------------------------------
-  # ジョブ2: アプリの静的解析とビルド（ジョブ1のイメージを使用）
+  # ジョブ2: フロントエンドの検証 (並列実行)
   # ---------------------------------------------------
-  build-tauri:
+  frontend-checks:
     needs: prepare-image
     runs-on: ubuntu-latest
     container:
-      # 上のジョブで決定したタグ（最新ビルド または 既存キャッシュ）を使用
       image: ${{ needs.prepare-image.outputs.image-tag }}
-
     steps:
       - uses: actions/checkout@v4
 
-      # 1. pnpm の有効化
       - name: Setup pnpm
         run: |
           corepack enable
           corepack prepare pnpm@latest --activate
 
-      # 2. フロントエンド依存関係のインストール
       - name: Install Frontend Dependencies
         working-directory: ./toeic-typing-app
         run: pnpm install --frozen-lockfile
 
-      # 3. Rust のキャッシュ設定
+      # TypeScriptの型チェック等（ESLintがあればここに追加）
+      - name: Run TypeScript Check
+        working-directory: ./toeic-typing-app
+        run: pnpm exec tsc --noEmit
+
+  # ---------------------------------------------------
+  # ジョブ3: バックエンド検証とTauriビルド (並列実行)
+  # ---------------------------------------------------
+  backend-and-build:
+    needs: prepare-image
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ needs.prepare-image.outputs.image-tag }}
+    env:
+      CARGO_INCREMENTAL: '0'
+      RUSTFLAGS: "-Dwarnings"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
+
+      - name: Install Frontend Dependencies
+        working-directory: ./toeic-typing-app
+        run: pnpm install --frozen-lockfile
+
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: './toeic-typing-app/src-tauri -> target'
 
-      # 4. Rust コードの静的解析・テスト
-      - name: Rust Linter & Test
+      - name: Rust Linter
         working-directory: ./toeic-typing-app
         run: |
           cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
-          cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
-          cargo test --manifest-path src-tauri/Cargo.toml
+          cargo clippy --manifest-path src-tauri/Cargo.toml
 
-      # 5. Tauri のビルド
+      # 標準の cargo test から爆速の cargo nextest に変更
+      - name: Rust Tests
+        working-directory: ./toeic-typing-app
+        run: cargo nextest run --manifest-path src-tauri/Cargo.toml
+
       - name: Build Tauri App
         working-directory: ./toeic-typing-app
-        run: pnpm tauri build
+        run: pnpm tauri build --no-bundle
