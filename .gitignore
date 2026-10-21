@@ -7,3 +7,5 @@
 # 環境変数ファイル（パスやシークレットを管理する場合）
 .env
 .env.local
+
+node_modules/
