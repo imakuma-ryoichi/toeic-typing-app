@@ -1,6 +1,5 @@
-# TOEIC Typing App
+# typing-app
 
-TOEIC英単語・例文に特化したタイピング練習デスクトップアプリケーションです。  
 フロントエンドに React + Vite + TypeScript、デスクトップ基盤に Tauri v2 (Rust) を採用しています。
 
 ---
