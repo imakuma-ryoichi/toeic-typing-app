@@ -1,10 +1,8 @@
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 
 function App() {
-const [inputText, setInputText] = useState("");
+  const [inputText, setInputText] = useState("");
   const targetWord = "apple"; // 例: 出題する英単語
 
   return (
