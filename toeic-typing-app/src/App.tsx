@@ -4,46 +4,31 @@ import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
-
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+const [inputText, setInputText] = useState("");
+  const targetWord = "apple"; // 例: 出題する英単語
 
   return (
     <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+      <h1>TOEIC Typing App</h1>
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      {/* 出題される単語 */}
+      <div className="word-display">
+        <h2>{targetWord}</h2>
       </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
 
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
+      {/* タイピング入力欄 */}
+      <input
+        type="text"
+        value={inputText}
+        onChange={(e) => setInputText(e.target.value)}
+        placeholder="ここにタイプしてください"
+        autoFocus
+      />
+
+      {/* 判定結果 */}
+      {inputText === targetWord && (
+        <p style={{ color: "green", fontWeight: "bold" }}>正解！</p>
+      )}
     </main>
   );
 }
