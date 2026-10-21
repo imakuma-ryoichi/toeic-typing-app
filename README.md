@@ -1,0 +1,121 @@
+# TOEIC Typing App
+
+TOEIC英単語・例文に特化したタイピング練習デスクトップアプリケーションです。  
+フロントエンドに React + Vite + TypeScript、デスクトップ基盤に Tauri v2 (Rust) を採用しています。
+
+---
+
+## 1. ローカルでの動作確認方法 (pnpm)
+
+### 前提条件
+- **Node.js**: v20以上推奨
+- **pnpm**: v9以上推奨（`corepack enable && corepack prepare pnpm@latest --activate` などで導入可能）
+- **Rust**: 最新の Stable toolchain（`rustup` 経由）
+- **OS固有の依存パッケージ（Tauri実行時）**:
+  - **Linux**: `libwebkit2gtk-4.1-dev`, `build-essential`, `curl`, `wget`, `file`, `libxdo-dev`, `libssl-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev` 等
+  - **macOS / Windows**: 各OSの標準要件（詳細は [Tauri公式ドキュメント](https://v2.tauri.app/start/prerequisites/) を参照）
+
+---
+
+### 手順
+
+アプリケーションのソースコードは `toeic-typing-app/` ディレクトリ配下にあります。まずは該当ディレクトリに移動します。
+
+```bash
+cd toeic-typing-app
+```
+
+#### ① 依存パッケージのインストール
+```bash
+pnpm install
+```
+
+#### ② ブラウザ上でのUI確認（軽量・高速なフロント開発）
+デスクトップアプリを立ち上げずに、ブラウザ上でUIやタイピングロジックの動作を確認できます。
+```bash
+pnpm dev
+```
+起動後、ターミナルに表示されるURL（通常は `http://localhost:1420/`）にブラウザでアクセスします。
+
+#### ③ Tauriデスクトップアプリとしての起動・確認
+Rustバックエンドを含めたネイティブデスクトップウィンドウとして動作確認を行います。
+```bash
+pnpm tauri dev
+```
+初回起動時はRustクレートのコンパイルが行われるため数分かかりますが、以降はキャッシュにより高速に再ビルド・ホットリロードされます。
+
+#### ④ 型チェックおよびビルドの検証
+```bash
+# TypeScriptの型チェック + フロントエンドビルド検証
+pnpm build
+
+# Tauriデスクトップアプリのビルド（インストーラ/実行可能バイナリの生成）
+pnpm tauri build
+```
+
+---
+
+## 2. CIにおけるビルド高速化 (Rustリンカー: mold)
+
+GitHub ActionsのCI環境（`.github/workflows/ci.yml` および `Dockerfile`）では、Rustのビルド時間を大幅に短縮するために **高速リンカー `mold`**（および `clang`）を採用しています。
+
+- **仕組み**:
+  RustのLinux向けビルドではデフォルトの `ld` や `lld` よりも高速な `mold` をリンカーとして指定することで、特に依存関係が多いTauriアプリのリンク工程にかかる時間を大幅に削減しています。
+- **CIでの導入**:
+  ベースイメージ（Dockerfile）で `clang` と `mold` をインストールし、CIビルドを高速化しています。
+- **ローカル（Linux環境）での利用**:
+  Linux環境でローカルでも同様に `mold` を使用してビルドを高速化したい場合は、システムに `clang` と `mold` をインストールした上で、`src-tauri/.cargo/config.toml` に以下の設定を配置します：
+
+  ```toml
+  [target.x86_64-unknown-linux-gnu]
+  linker = "clang"
+  rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+  ```
+
+---
+
+## 3. 最終的にネット接続なし（オフライン）で動かせるか？
+
+### 結論
+**完全にインターネット未接続（オフライン）で動作可能です。**
+
+### 詳細・理由
+1. **フロントエンド資産の内包（スタンドアロン）**:  
+   Tauriは、ビルド時にHTML/CSS/JavaScriptなどのフロントエンド成果物をRustの実行ファイル（バイナリ）内部に埋め込みます。実行時はローカルのWebView経由で内部的に読み込まれるため、外部サーバーへのリクエストは発生しません。
+2. **データのローカル完結**:  
+   ユーザーの入力ログや成績データはローカル（SQLiteデータベースやローカルストレージ）に保存する設計のため、クラウドAPIへの常時通信は不要です。
+
+### オフライン時のフォントの挙動とローカル同梱手順
+現在 `toeic-typing-app/index.html` にて Google Fonts (`https://fonts.googleapis.com/...`) を読み込む指定があります。
+
+- **未対応時の挙動**:
+  - インターネット未接続の環境では Google Fonts へのリクエストがタイムアウトまたはスキップされ、OSのシステム標準等幅フォント（Courier, monospace など）に自動的にフォールバックされます。
+  - アプリの起動やタイピング機能自体が停止・エラーになることはありませんが、フォントの字形や文字幅の見た目が変わる可能性があります。
+
+- **完全オフライン対応の手順（フォントのローカル同梱）**:
+  オフライン環境でも同一のフォント（JetBrains Mono, Fira Code, Noto Sans JP など）を確実に表示させたい場合は、以下の手順でローカルアセットとして同梱します。
+
+  1. **フォントファイルの配置**:
+     `.woff2` や `.ttf` などのフォントファイルを `toeic-typing-app/public/fonts/` ディレクトリに保存します。
+     ```text
+     toeic-typing-app/
+     └── public/
+         └── fonts/
+             ├── JetBrainsMono-Regular.woff2
+             └── NotoSansJP-Regular.woff2
+     ```
+  2. **CSSでの `@font-face` 定義**:
+     `toeic-typing-app/src/App.css` または専用の CSS にフォント定義を記述します。
+     ```css
+     @font-face {
+       font-family: 'JetBrains Mono';
+       src: url('/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+       font-weight: 400;
+       font-style: normal;
+       font-display: swap;
+     }
+     ```
+  3. **`index.html` からの外部CDNリンク削除**:
+     `toeic-typing-app/index.html` 内の `<link rel="preconnect" ...>` および Google Fonts の `<link href="https://fonts.googleapis.com/..." ...>` の行を削除します。
+
+これにより、アプリの配布パッケージ（インストーラ/バイナリ）内にフォントファイル自体が埋め込まれ、一切の外部通信なしで意図したフォントが描画されます。
