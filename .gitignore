@@ -1,0 +1,9 @@
+# SQLite データベースファイル
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# 環境変数ファイル（パスやシークレットを管理する場合）
+.env
+.env.local
