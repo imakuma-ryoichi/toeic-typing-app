@@ -107,19 +107,11 @@ jobs:
           cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
           cargo clippy --manifest-path src-tauri/Cargo.toml
 
-      # 標準の cargo test から爆速の cargo nextest に変更
+        # 標準の cargo test から爆速の cargo nextest に変更
       - name: Rust Tests
         working-directory: ./toeic-typing-app
-        run: cargo nextest run --manifest-path src-tauri/Cargo.toml
-
-      - name: Run tests with nextest
         run: cargo nextest run --manifest-path src-tauri/Cargo.toml --no-tests=pass
 
       - name: Build Tauri App
         working-directory: ./toeic-typing-app
         run: pnpm tauri build --no-bundle
-
-        # --no-tests=pass を追加して、テストが0件でもCIを成功させる
-      - name: Rust Tests
-        working-directory: ./toeic-typing-app
-        run: cargo nextest run --manifest-path src-tauri/Cargo.toml --no-tests=pass
