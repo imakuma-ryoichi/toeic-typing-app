@@ -97,6 +97,48 @@ GitHub ActionsのCI環境（`.github/workflows/ci.yml` および `Dockerfile`）
 
 ---
 
+## 3. 家のPCでCIを実行する (セルフホストランナー)
+
+GitHub Actions の CI を、家の PC（Fedora）のマシンリソースで実行できます。
+
+### 仕組み
+`.github/workflows/ci.yml` の `changes` ジョブで実行先を決めています。このジョブだけは常に GitHub のマシンで動きます。
+
+| 条件 | 実行先 |
+|---|---|
+| リポジトリ変数 `USE_SELF_HOSTED` が `true` で、main への push または同じリポジトリからの PR | 家の PC（ラベル `mypc`） |
+| フォークからの PR、または `USE_SELF_HOSTED` が `true` でない | GitHub のマシン（`ubuntu-latest`） |
+
+- `prepare-image`、`frontend-checks`、`backend-and-build` が、上で決めた実行先で動きます。
+- `backend-and-build` の最後で、コンテナが root で作ったファイルの権限を直しています。これがないと、次のジョブのチェックアウトで削除できず失敗します。
+
+### セットアップ手順（家の Fedora PC で実行）
+`scripts/setup-self-hosted-runner.sh` が次の作業をまとめて行います。
+- Docker CE を入れる（Fedora 標準の podman ではなく Docker が必要です）
+- ランナー専用ユーザー `gha-runner` を作る
+- ランナー本体を `/opt/actions-runner` に置く
+- ラベル `mypc` で登録し、systemd で常駐させる
+
+```bash
+sudo dnf install -y gh && gh auth login
+git clone https://github.com/imakuma-ryoichi/toeic-typing-app && cd toeic-typing-app
+bash scripts/setup-self-hosted-runner.sh
+gh variable set USE_SELF_HOSTED --body true
+```
+
+家の PC を止めるときは、変数を `false` にすれば GitHub のマシンに戻ります。
+
+```bash
+gh variable set USE_SELF_HOSTED --body false
+```
+
+> [!CAUTION]
+> **public リポジトリなので、次の設定は必ずしてください。**
+> フォークからの PR は `ci.yml` 自体を書き換えて、家の PC を直接指定できてしまいます。上の振り分けだけでは防げません。
+> GitHub の **Settings → Actions → General → "Fork pull request workflows from outside collaborators"** で **"Require approval for all external contributors"** を選んでください。こうすると、外部の人の PR は承認するまで CI が動きません。
+
+---
+
 
 ### オフライン時のフォントの挙動とローカル同梱手順
 現在 `toeic-typing-app/index.html` にて Google Fonts (`https://fonts.googleapis.com/...`) を読み込む指定があります。

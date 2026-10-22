@@ -27,7 +27,26 @@ jobs:
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
       backend: ${{ steps.filter.outputs.backend }}
+      runner: ${{ steps.runner.outputs.labels }}
     steps:
+      # 実行先ランナーの選択 (家のPCのセルフホストランナー or GitHubホスト)
+      # - リポジトリ変数 USE_SELF_HOSTED が 'true' のときのみセルフホストを使用 (PC停止時は変数を変えるだけで切替可能)
+      # - public リポジトリのため、フォークからの PR は常に GitHub ホストで実行 (家のPCで外部コードを動かさない)
+      - name: Select runner
+        id: runner
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          USE_SELF_HOSTED: ${{ vars.USE_SELF_HOSTED }}
+        run: |
+          if [ "$USE_SELF_HOSTED" = "true" ] && { [ "$EVENT_NAME" = "push" ] || [ "$HEAD_REPO" = "$GITHUB_REPOSITORY" ]; }; then
+            echo 'labels=["self-hosted","linux","x64","mypc"]' >> "$GITHUB_OUTPUT"
+            echo "Runner: self-hosted (mypc)"
+          else
+            echo 'labels="ubuntu-latest"' >> "$GITHUB_OUTPUT"
+            echo "Runner: ubuntu-latest"
+          fi
+
       - uses: actions/checkout@v4
 
       - name: Detect file changes
@@ -53,7 +72,8 @@ jobs:
   # ジョブ1: Dockerfile の変更検知とビルド (タグ未解決エラー防止のため常時タグ解決)
   # ---------------------------------------------------
   prepare-image:
-    runs-on: ubuntu-latest
+    needs: changes
+    runs-on: ${{ fromJSON(needs.changes.outputs.runner) }}
     permissions:
       contents: read
       packages: write
@@ -105,7 +125,7 @@ jobs:
   frontend-checks:
     needs: changes
     if: needs.changes.outputs.frontend == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(needs.changes.outputs.runner) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -136,7 +156,7 @@ jobs:
   backend-and-build:
     needs: [changes, prepare-image]
     if: needs.changes.outputs.backend == 'true' || github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(needs.changes.outputs.runner) }}
     container:
       image: ${{ needs.prepare-image.outputs.image-tag }}
     env:
@@ -203,3 +223,8 @@ jobs:
       - name: Build Tauri App
         working-directory: ./toeic-typing-app
         run: pnpm tauri build --no-bundle --debug --config '{"build":{"beforeBuildCommand":""}}'
+
+      # セルフホストランナー対策: コンテナ(root)が作成したファイルを、次回ジョブでホスト側ユーザーが削除できるようにする
+      - name: Fix workspace permissions for self-hosted runner
+        if: always() && runner.environment == 'self-hosted'
+        run: chmod -R a+rwX /__w || true
