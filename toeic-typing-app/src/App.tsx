@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import "./App.css";
+import { LongTextTyping } from "./components/LongTextTyping";
 
 type FunctionTabId = "func1" | "func2" | "func3" | "func4" | "func5";
 
@@ -129,7 +130,7 @@ function App() {
       </header>
 
       {/* メイン画面 */}
-      <main className="main-content">
+      <main className={`main-content ${activeTab === "func4" ? "main-content-wide" : ""}`}>
         {activeTab === "func5" ? (
           analyticsSubView === "detail" ? (
             /* ==========================================================
@@ -484,9 +485,16 @@ function App() {
               </div>
             </div>
           )
+        ) : activeTab === "func4" ? (
+          /* ==========================================================
+             機能4：実践文（2行スライドタイピング画面）
+             長文が二行表示され、一行完ぺきに打てたら消えて下が上に上がり、
+             次の文が下に表示される
+             ========================================================== */
+          <LongTextTyping isActive={activeTab === "func4"} />
         ) : (
           /* ==========================================================
-             機能1〜4：元のUIそのまま＋タイピング表示画面
+             機能1〜3：タイピング表示画面
              （タイピング判定はナシ、中央に「ここが表示画面」を表示）
              ========================================================== */
           <div className="typing-box">

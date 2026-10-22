@@ -132,3 +132,44 @@ GitHub ActionsのCI環境（`.github/workflows/ci.yml` および `Dockerfile`）
      `toeic-typing-app/index.html` 内の `<link rel="preconnect" ...>` および Google Fonts の `<link href="https://fonts.googleapis.com/..." ...>` の行を削除します。
 
 これにより、アプリの配布パッケージ（インストーラ/バイナリ）内にフォントファイル自体が埋め込まれ、一切の外部通信なしで意図したフォントが描画されます。
+
+---
+
+## 3. 商標・権利表記およびライセンス (Licenses & Rights)
+
+### 商標および免責事項 (Trademark Notice & Disclaimer)
+- **TOEIC® 商標**:
+  TOEIC is a registered trademark of Educational Testing Service (ETS) in the United States and other countries.
+- **免責事項**:
+  本アプリケーションおよび収録されている学習用コンテンツは、個人の英語学習・開発検証を目的とした非公式の独立プロジェクトであり、Educational Testing Service (ETS) による検討、公認、推奨、または承認を受けたものではありません。
+
+---
+
+### フォントの権利表記・ライセンス (Fonts)
+本アプリケーションで指定・使用しているフォントは、各配布元のオープンソースライセンスに準拠しています。
+
+| フォント名 | 権利者 / 配布元 | ライセンス | 概要・許諾条件 |
+|---|---|---|---|
+| **JetBrains Mono** | JetBrains s.r.o. | [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) | 商用・非商用問わず無償利用、改変、再配布可能 |
+| **Noto Sans JP** | Google LLC | [SIL Open Font License 1.1 (OFL)](https://openfontlicense.org/) | Webフォント/アプリ同梱を含め無償利用、バンドル可能 |
+| **Fira Code** | Nikita Prokopov | [SIL Open Font License 1.1 (OFL)](https://openfontlicense.org/) | 等幅プログラミングフォントとしての無償利用・再配布可能 |
+
+---
+
+### 主要オープンソースソフトウェアのライセンス (Third-Party OSS)
+
+本プロジェクトのビルドおよび実行には、以下のオープンソースライブラリ・フレームワークを利用しています。
+
+| ソフトウェア / ライブラリ | 権利者 | ライセンス |
+|---|---|---|
+| **Tauri (v2)** | The Tauri Programme in The Commons Conservancy | MIT License / Apache License 2.0 |
+| **React / React DOM** | Meta Platforms, Inc. and affiliates | MIT License |
+| **Vite** | Yuxi (Evan) You & Vite Contributors | MIT License |
+| **TypeScript** | Microsoft Corporation | Apache License 2.0 |
+
+---
+
+### 本プロジェクトのライセンス (License)
+
+本リポジトリ内のソースコードは、[MIT License](https://opensource.org/licenses/MIT) の下で公開・提供されています。
+

@@ -1,0 +1,530 @@
+/* ==========================================================================
+   LongTextTyping.css - 機能4（実践文）2行スライドタイピングUI
+   ========================================================================== */
+
+.longtext-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* 上部コントローラーバー：文章切り替え ＆ 進捗 ＆ リセット */
+.longtext-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+
+.text-selector-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.text-select-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.text-select-dropdown {
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.text-select-dropdown:focus {
+  border-color: var(--char-caret);
+}
+
+.longtext-meta-center {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.progress-pill {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--char-caret);
+  background-color: rgba(37, 99, 235, 0.08);
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+[data-theme="slate"] .progress-pill {
+  background-color: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.25);
+}
+
+.mini-progress-track {
+  width: 90px;
+  height: 6px;
+  background-color: var(--border-subtle);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.mini-progress-fill {
+  height: 100%;
+  background-color: var(--char-caret);
+  border-radius: 9999px;
+  transition: width 0.25s ease-out;
+}
+
+.longtext-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-secondary-action {
+  background-color: var(--bg-app);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-secondary-action:hover {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+/* ==========================================================================
+   2行タイピングステージ
+   ========================================================================== */
+.typing-stage-card {
+  width: 100%;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 2.25rem 2.5rem;
+  position: relative;
+  overflow: hidden;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  user-select: none;
+}
+
+/* ミスタイプ時の赤フラッシュ */
+.typing-stage-card.mistake-flash {
+  animation: stageMistakeShake 0.28s ease-in-out;
+  border-color: #EF4444;
+}
+
+@keyframes stageMistakeShake {
+  0% {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.45);
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-3px);
+  }
+  50% {
+    transform: translateX(3px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    transform: translateX(0);
+  }
+}
+
+.lines-display-window {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  width: 100%;
+  position: relative;
+}
+
+/* 各行スロット共通 */
+.text-line-slot {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+/* 行ヘッダー（行バッジ + 日本語訳） */
+.line-meta-header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.line-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.18rem 0.5rem;
+  border-radius: 4px;
+}
+
+.line-badge.active-badge {
+  background-color: var(--char-caret);
+  color: #FFFFFF;
+}
+
+.line-badge.preview-badge {
+  background-color: var(--border-subtle);
+  color: var(--text-muted);
+}
+
+.line-japanese-trans {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* 英文タイピングエリア：単語途中の改行を完全防止し、常に1行で美しく表示 */
+.line-english-row {
+  font-family: var(--font-mono);
+  font-size: clamp(1.15rem, 1.45vw, 1.35rem);
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  min-height: 2.3rem;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.line-english-row::-webkit-scrollbar {
+  display: none;
+}
+
+/* 単語ラッパー：単語の途中で改行させない */
+.typing-word {
+  display: inline-block;
+  white-space: pre;
+}
+
+/* 1行目（入力中：Active） */
+.active-slot {
+  padding: 1rem 1.25rem;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-left: 4px solid var(--char-caret);
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+/* 2行目（プレビュー：Upcoming） */
+.preview-slot {
+  padding: 0.85rem 1.25rem;
+  opacity: 0.5;
+  border: 1px dashed var(--border-subtle);
+  border-left: 4px solid transparent;
+  border-radius: 8px;
+  background-color: transparent;
+  transition: opacity 0.2s ease;
+}
+
+.preview-slot .line-english-row {
+  color: var(--text-muted);
+  font-size: clamp(1.05rem, 1.35vw, 1.25rem);
+}
+
+.preview-end-marker {
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  padding: 0.5rem 0;
+}
+
+/* ==========================================================================
+   アニメーション：「一行完ぺきに打てたら消えて、下が上に上がり、次が下に表示」
+   ========================================================================== */
+
+/* 上に消えていく行（打鍵完了した行） */
+.slot-exiting-up {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  animation: lineDisappearUp 0.24s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+  z-index: 5;
+}
+
+@keyframes lineDisappearUp {
+  0% {
+    transform: translateY(0);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateY(-30px);
+    opacity: 0;
+  }
+}
+
+/* 下から上がってきた行（新しくActiveになる行） */
+.slot-promoted-up {
+  animation: linePromoteUp 0.24s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+}
+
+@keyframes linePromoteUp {
+  0% {
+    transform: translateY(28px);
+    opacity: 0.75;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 下から新しく出現する行（新しいPreview行） */
+.slot-appearing-down {
+  animation: lineAppearDown 0.24s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+}
+
+@keyframes lineAppearDown {
+  0% {
+    transform: translateY(22px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+}
+
+/* ==========================================================================
+   文字単位の判定スタイル (Correct / Incorrect / Untyped / Caret)
+   ========================================================================== */
+.typing-char {
+  position: relative;
+  display: inline-block;
+  transition: color 0.05s ease;
+}
+
+/* 正解文字 */
+.char-correct {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ミス文字 */
+.char-incorrect {
+  color: #EF4444;
+  background-color: rgba(239, 68, 68, 0.15);
+  border-radius: 2px;
+  font-weight: 700;
+  text-decoration: underline wavy #EF4444;
+}
+
+/* 空白のミス表示 */
+.char-incorrect.char-space {
+  background-color: rgba(239, 68, 68, 0.3);
+  box-shadow: 0 0 0 1px #EF4444;
+}
+
+/* 未入力文字 */
+.char-untyped {
+  color: var(--text-muted);
+  opacity: 0.45;
+  font-weight: 400;
+}
+
+/* カーソル（キャレット） */
+.char-caret {
+  position: absolute;
+  left: 0;
+  top: 12%;
+  bottom: 12%;
+  width: 2.5px;
+  background-color: var(--char-caret);
+  border-radius: 1px;
+  animation: caretBlink 0.9s infinite ease-in-out;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.char-caret.caret-trailing {
+  left: auto;
+  right: -2.5px;
+}
+
+@keyframes caretBlink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.15;
+  }
+}
+
+/* ==========================================================================
+   キー操作のヒントバー
+   ========================================================================== */
+.stage-footer-hints {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.hint-keys {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.kbd-badge {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+}
+
+/* ==========================================================================
+   完了画面 (Completion View)
+   ========================================================================== */
+.completion-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  gap: 1.5rem;
+  animation: fadeInModal 0.3s ease-out;
+}
+
+@keyframes fadeInModal {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.completion-icon {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.completion-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.35rem;
+}
+
+.completion-header p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.completion-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  width: 100%;
+  max-width: 580px;
+  margin: 0.5rem 0;
+}
+
+.completion-metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem 0.75rem;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.comp-metric-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.comp-metric-val {
+  font-family: var(--font-mono);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.comp-metric-val.highlight-acc {
+  color: var(--char-caret);
+}
+
+.completion-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.btn-primary-action {
+  background-color: var(--char-caret);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 0.65rem 1.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.btn-primary-action:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.btn-primary-action:active {
+  transform: translateY(0);
+}
