@@ -16,7 +16,8 @@
 
 | コマンド | 説明 |
 |---|---|
-| `make` / `make dev` | デスクトップアプリとしてローカル開発起動（`cd toeic-typing-app && pnpm tauri dev`） |
+| `make` / `make dev` | Webブラウザ向けに高速ローカル開発起動（`cd toeic-typing-app && pnpm dev`） |
+| `make dev-desktop` | デスクトップアプリとしてローカル開発起動（`cd toeic-typing-app && pnpm tauri dev`） |
 | `make help` | 利用可能なコマンドの一覧と説明をターミナルに表示 |
 | `make ci` / `make check` | GitHub Actions CI と同等の完全検証（型チェック、fmt、clippy、nextest、ビルド）を一括実行 |
 | `make lint-ts` | TypeScript の型チェック（`tsc --noEmit`） |

@@ -59,10 +59,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+        # 1. pnpmの公式セットアップアクションを追加
       - name: Setup pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@latest --activate
+        uses: pnpm/action-setup@v3
+        with:
+          version: 12.14.0 # エラーログに記載されていたバージョンを指定
 
       - name: Install Frontend Dependencies
         working-directory: ./toeic-typing-app

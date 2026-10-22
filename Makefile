@@ -2,13 +2,18 @@
 APP_DIR   := toeic-typing-app
 TAURI_DIR := $(APP_DIR)/src-tauri
 
-.PHONY: dev help ci check lint-ts lint-rust test-rust build-tauri clean
+.PHONY: dev dev-desktop dev-tauri help ci check lint-ts lint-rust test-rust build-tauri clean
 
 # ------------------------------------------------------------------------------
 # 開発起動 (デフォルトターゲット)
 # ------------------------------------------------------------------------------
-dev: ## デスクトップアプリとしてローカル開発起動
+dev: ## Webブラウザ向けに高速ローカル開発起動 (Vite)
+	cd $(APP_DIR) && pnpm dev
+
+dev-desktop: ## デスクトップアプリとしてローカル開発起動 (Tauri)
 	cd $(APP_DIR) && pnpm tauri dev
+
+dev-tauri: dev-desktop ## dev-desktop のエイリアス
 
 # ------------------------------------------------------------------------------
 # ヘルプ
