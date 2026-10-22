@@ -81,7 +81,7 @@ function App() {
           <div className="brand-logo">Typing</div>
         </div>
 
-        {/* 上のリボンと同化し、均等に並んだ機能タブ */}
+        {/* 上部バーの機能タブナビゲーション */}
         <nav className="ribbon-nav" aria-label="機能ナビゲーション">
           {TABS_CONFIG.map((tab) => {
             const isActive = activeTab === tab.id;

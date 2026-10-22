@@ -84,14 +84,15 @@ body {
   color: var(--text-primary);
 }
 
-/* リボンと同化し、均等に並ぶタブ */
+/* 上部バーの機能タブナビゲーション（隣接を防ぎ各タブ間にスペースを配置） */
 .ribbon-nav {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   justify-content: center;
   flex: 1;
-  max-width: 680px;
-  margin: 0 1rem;
+  max-width: 1000px;
+  margin: 0 3.5rem;
+  gap: 0.1rem;
 }
 
 .ribbon-tab-btn {
@@ -102,10 +103,11 @@ body {
   justify-content: center;
   gap: 2px;
   background: transparent;
-  border: none;
-  border-bottom: 3px solid transparent;
+  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  border-radius: 8px;
   cursor: pointer;
-  padding: 0 0.5rem;
+  padding: 0.45rem 0.5rem;
   color: var(--text-muted);
   transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 }
@@ -116,11 +118,13 @@ body {
   color: var(--text-primary);
 }
 
-/* アクティブ状態：下部アクセントライン ＋ 背景ハイライト */
+/* アクティブ状態：枠線 ＋ 下部アクセントライン ＋ 背景ハイライト */
 .ribbon-tab-btn.active {
   color: var(--text-primary);
-  border-bottom-color: var(--char-caret);
   background-color: var(--ribbon-active-bg);
+  border-color: var(--border-subtle);
+  border-bottom-color: var(--char-caret);
+  border-bottom-width: 2px;
 }
 
 .ribbon-tab-title {
