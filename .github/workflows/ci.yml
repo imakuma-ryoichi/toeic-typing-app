@@ -3,7 +3,13 @@ name: CI (Tauri App)
 on:
   push:
     branches: [ "main", "master" ]
-  pull_request: {}
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -39,7 +45,19 @@ jobs:
           HASH=$(sha256sum Dockerfile | cut -c1-16)
           echo "tag=ghcr.io/imakuma-ryoichi/tauri-builder:${HASH}" >> $GITHUB_OUTPUT
 
+      - name: Check if image exists
+        id: check-image
+        run: |
+          if docker manifest inspect ${{ steps.meta.outputs.tag }} > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Image already exists in GHCR. Skipping build."
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Image not found. Proceeding with build."
+          fi
+
       - name: Build and push Docker image
+        if: steps.check-image.outputs.exists != 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -49,21 +67,24 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ---------------------------------------------------
-  # ジョブ2: フロントエンドの検証 (並列実行)
+  # ジョブ2: フロントエンドの検証 (独立して即座に並列実行)
   # ---------------------------------------------------
   frontend-checks:
-    needs: prepare-image
     runs-on: ubuntu-latest
-    container:
-      image: ${{ needs.prepare-image.outputs.image-tag }}
     steps:
       - uses: actions/checkout@v4
 
-        # 1. pnpmの公式セットアップアクションを追加
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: 12.14.0 # エラーログに記載されていたバージョンを指定
+          version: 12.14.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+          cache-dependency-path: toeic-typing-app/pnpm-lock.yaml
 
       - name: Install Frontend Dependencies
         working-directory: ./toeic-typing-app
@@ -75,7 +96,7 @@ jobs:
         run: pnpm exec tsc --noEmit
 
   # ---------------------------------------------------
-  # ジョブ3: バックエンド検証とTauriビルド (並列実行)
+  # ジョブ3: バックエンド検証とTauriビルド
   # ---------------------------------------------------
   backend-and-build:
     needs: prepare-image
@@ -84,14 +105,14 @@ jobs:
       image: ${{ needs.prepare-image.outputs.image-tag }}
     env:
       CARGO_INCREMENTAL: '0'
-      RUSTFLAGS: "-Dwarnings"
+      RUSTFLAGS: "-Dwarnings -C linker=clang -C link-arg=-fuse-ld=mold"
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@latest --activate
+        uses: pnpm/action-setup@v3
+        with:
+          version: 12.14.0
 
       - name: Install Frontend Dependencies
         working-directory: ./toeic-typing-app
@@ -108,11 +129,12 @@ jobs:
           cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
           cargo clippy --manifest-path src-tauri/Cargo.toml
 
-        # 標準の cargo test から爆速の cargo nextest に変更
+      # 標準の cargo test から爆速の cargo nextest に変更
       - name: Rust Tests
         working-directory: ./toeic-typing-app
         run: cargo nextest run --manifest-path src-tauri/Cargo.toml --no-tests=pass
 
+      # CI検証用のため --debug で高速ビルド（LTOを回避）
       - name: Build Tauri App
         working-directory: ./toeic-typing-app
-        run: pnpm tauri build --no-bundle
+        run: pnpm tauri build --no-bundle --debug
