@@ -17,8 +17,8 @@ const TABS_CONFIG: TabItemInfo[] = [
   {
     id: "func1",
     label: "機能1",
-    subLabel: "単語",
-    category: "単語 / Core Vocab",
+    subLabel: "日本語",
+    category: "日本語 / Core Vocab",
     displayMain: "ここが表示画面",
     meaning: "ここに単語の意味や品詞が表示されます",
     example: "The project is running on schedule.（ここに例文が表示されます）",
@@ -26,8 +26,8 @@ const TABS_CONFIG: TabItemInfo[] = [
   {
     id: "func2",
     label: "機能2",
-    subLabel: "熟語",
-    category: "熟語 / Business Phrases",
+    subLabel: "単語",
+    category: "単語 / Business Phrases",
     displayMain: "ここが表示画面",
     meaning: "ここにイディオム・定型表現の意味が表示されます",
     example: "We look forward to working with you.（ここに例文が表示されます）",
@@ -35,8 +35,8 @@ const TABS_CONFIG: TabItemInfo[] = [
   {
     id: "func3",
     label: "機能3",
-    subLabel: "短文",
-    category: "短文 / Sentences",
+    subLabel: "熟語",
+    category: "熟語 / Business Phrases",
     displayMain: "ここが表示画面",
     meaning: "ここに短文の日本語訳が表示されます",
     example: "Please find the attached invoice for your confirmation.",
@@ -78,7 +78,7 @@ function App() {
       {/* 上部リボン（ヘッダー） */}
       <header className="ribbon-header">
         <div className="ribbon-left">
-          <div className="brand-logo">TOEIC Typing</div>
+          <div className="brand-logo">Typing</div>
         </div>
 
         {/* 上のリボンと同化し、均等に並んだ機能タブ */}
