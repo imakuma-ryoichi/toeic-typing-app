@@ -17,9 +17,44 @@ concurrency:
 
 jobs:
   # ---------------------------------------------------
-  # ジョブ1: Dockerfile の変更検知とビルド
+  # ジョブ0: 変更ファイルの検知 (未変更領域のジョブをスキップ)
+  # ---------------------------------------------------
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect file changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'toeic-typing-app/src/**'
+              - 'toeic-typing-app/public/**'
+              - 'toeic-typing-app/index.html'
+              - 'toeic-typing-app/package.json'
+              - 'toeic-typing-app/pnpm-lock.yaml'
+              - 'toeic-typing-app/tsconfig*.json'
+              - 'toeic-typing-app/vite.config.ts'
+              - '.github/workflows/ci.yml'
+            backend:
+              - 'toeic-typing-app/src-tauri/**'
+              - 'Dockerfile'
+              - '.github/workflows/ci.yml'
+
+  # ---------------------------------------------------
+  # ジョブ1: Dockerfile の変更検知とビルド (バックエンド変更時のみ)
   # ---------------------------------------------------
   prepare-image:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -67,9 +102,11 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ---------------------------------------------------
-  # ジョブ2: フロントエンドの検証 (独立して即座に並列実行)
+  # ジョブ2: フロントエンドの検証 (フロント変更時のみ実行)
   # ---------------------------------------------------
   frontend-checks:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -90,16 +127,17 @@ jobs:
         working-directory: ./toeic-typing-app
         run: pnpm install --frozen-lockfile
 
-      # TypeScriptの型チェック等（ESLintがあればここに追加）
-      - name: Run TypeScript Check
+      # TypeScriptの型チェック + Viteビルド検証
+      - name: Run TypeScript Check & Vite Build
         working-directory: ./toeic-typing-app
-        run: pnpm exec tsc --noEmit
+        run: pnpm build
 
   # ---------------------------------------------------
-  # ジョブ3: バックエンド検証とTauriビルド
+  # ジョブ3: バックエンド検証とTauriビルド (バックエンド変更時のみ実行)
   # ---------------------------------------------------
   backend-and-build:
-    needs: prepare-image
+    needs: [changes, prepare-image]
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     container:
       image: ${{ needs.prepare-image.outputs.image-tag }}
@@ -114,9 +152,30 @@ jobs:
         with:
           version: 12.14.0
 
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        working-directory: ./toeic-typing-app
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('toeic-typing-app/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
       - name: Install Frontend Dependencies
         working-directory: ./toeic-typing-app
         run: pnpm install --frozen-lockfile
+
+      # フロントエンドのビルド検証は frontend-checks で行うため、
+      # Rustキャッシュが dist の再生成で無効化されないよう固定のダミー dist を用意
+      - name: Prepare Dummy Frontend Dist for Tauri Context
+        working-directory: ./toeic-typing-app
+        run: |
+          mkdir -p dist
+          echo "<!doctype html><html><body></body></html>" > dist/index.html
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
@@ -135,6 +194,7 @@ jobs:
         run: cargo nextest run --manifest-path src-tauri/Cargo.toml --no-tests=pass
 
       # CI検証用のため --debug で高速ビルド（LTOを回避）
+      # beforeBuildCommand を空に上書きし、重複する Vite ビルドとキャッシュ破棄を防止
       - name: Build Tauri App
         working-directory: ./toeic-typing-app
-        run: pnpm tauri build --no-bundle --debug
+        run: pnpm tauri build --no-bundle --debug --config '{"build":{"beforeBuildCommand":""}}'
