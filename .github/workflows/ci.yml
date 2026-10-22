@@ -46,15 +46,14 @@ jobs:
               - '.github/workflows/ci.yml'
             backend:
               - 'toeic-typing-app/src-tauri/**'
+              - 'toeic-typing-app/.cargo/config.toml'
               - 'Dockerfile'
               - '.github/workflows/ci.yml'
 
   # ---------------------------------------------------
-  # ジョブ1: Dockerfile の変更検知とビルド (バックエンド変更時のみ)
+  # ジョブ1: Dockerfile の変更検知とビルド (タグ未解決エラー防止のため常時タグ解決)
   # ---------------------------------------------------
   prepare-image:
-    needs: changes
-    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -133,17 +132,18 @@ jobs:
         run: pnpm build
 
   # ---------------------------------------------------
-  # ジョブ3: バックエンド検証とTauriビルド (バックエンド変更時のみ実行)
+  # ジョブ3: バックエンド検証とTauriビルド (PR時はバックエンド変更時のみ、mainプッシュ時は結合検証のため常時実行)
   # ---------------------------------------------------
   backend-and-build:
     needs: [changes, prepare-image]
-    if: needs.changes.outputs.backend == 'true'
+    if: needs.changes.outputs.backend == 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     container:
       image: ${{ needs.prepare-image.outputs.image-tag }}
     env:
       CARGO_INCREMENTAL: '0'
-      RUSTFLAGS: "-Dwarnings -C linker=clang -C link-arg=-fuse-ld=mold"
+      # リンカ(mold)および -Dwarnings は .cargo/config.toml に一元化
+      # (環境変数 RUSTFLAGS を定義すると .cargo/config.toml の設定が上書きされるため未指定)
     steps:
       - uses: actions/checkout@v4
 
@@ -169,13 +169,19 @@ jobs:
         working-directory: ./toeic-typing-app
         run: pnpm install --frozen-lockfile
 
-      # フロントエンドのビルド検証は frontend-checks で行うため、
-      # Rustキャッシュが dist の再生成で無効化されないよう固定のダミー dist を用意
-      - name: Prepare Dummy Frontend Dist for Tauri Context
+      # PR時は高速化・Rustキャッシュ維持のためダミー dist を生成
+      - name: Prepare Dummy Frontend Dist for Tauri Context (PR)
+        if: github.event_name == 'pull_request'
         working-directory: ./toeic-typing-app
         run: |
           mkdir -p dist
           echo "<!doctype html><html><body></body></html>" > dist/index.html
+
+      # mainマージ(push)時はフロントエンドとTauriの結合検証のため正規の dist をビルド
+      - name: Build Frontend Dist for Tauri Integration (Push)
+        if: github.event_name != 'pull_request'
+        working-directory: ./toeic-typing-app
+        run: pnpm build
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
@@ -186,7 +192,7 @@ jobs:
         working-directory: ./toeic-typing-app
         run: |
           cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
-          cargo clippy --manifest-path src-tauri/Cargo.toml
+          cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
 
       # 標準の cargo test から爆速の cargo nextest に変更
       - name: Rust Tests
@@ -194,7 +200,7 @@ jobs:
         run: cargo nextest run --manifest-path src-tauri/Cargo.toml --no-tests=pass
 
       # CI検証用のため --debug で高速ビルド（LTOを回避）
-      # beforeBuildCommand を空に上書きし、重複する Vite ビルドとキャッシュ破棄を防止
+      # beforeBuildCommand を空に上書きし、直前のステップで用意した dist (ダミーまたは正規) を使用
       - name: Build Tauri App
         working-directory: ./toeic-typing-app
         run: pnpm tauri build --no-bundle --debug --config '{"build":{"beforeBuildCommand":""}}'
