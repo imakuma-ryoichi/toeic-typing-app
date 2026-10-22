@@ -1,23 +1,22 @@
 /* ==========================================================================
-   TOEIC Typing App - UI & Color Specification
-   控えめな可読性 & 低コントラスト設計
+   TOEIC Typing App - UI Specification
+   洗練されたミニマルUI（低コントラスト & リボン一体型均等タブ）
    ========================================================================== */
 
 :root {
-  /* Default: White / Paper Theme */
+  /* Default: Light (Paper) */
   --bg-app: #FFFFFF;
   --bg-card: #F8FAFC;
   --border-subtle: #E2E8F0;
   --text-muted: #64748B;
   --text-primary: #0F172A;
 
-  --char-untyped: #E2E8F0;
-  --char-correct: #0F172A;
-  --char-incorrect: #EF4444;
   --char-caret: #2563EB;
-  --flash-shadow: inset 0 0 15px rgba(239, 68, 68, 0.15);
+  --ribbon-hover: rgba(15, 23, 42, 0.06);     /* ホバーでほんのり暗転 */
+  --ribbon-active-bg: rgba(15, 23, 42, 0.09);
+  --ribbon-border: #E2E8F0;
 
-  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, Menlo, Monaco, Consolas, monospace;
   --font-sans: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
@@ -29,26 +28,10 @@
   --text-muted: #94A3B8;
   --text-primary: #F8FAFC;
 
-  --char-untyped: #334155;
-  --char-correct: #F8FAFC;
-  --char-incorrect: #F87171;
   --char-caret: #38BDF8;
-  --flash-shadow: inset 0 0 15px rgba(248, 113, 113, 0.2);
-}
-
-/* ホワイトテーマ（明示的なLight指定） */
-[data-theme="light"] {
-  --bg-app: #FFFFFF;
-  --bg-card: #F8FAFC;
-  --border-subtle: #E2E8F0;
-  --text-muted: #64748B;
-  --text-primary: #0F172A;
-
-  --char-untyped: #E2E8F0;
-  --char-correct: #0F172A;
-  --char-incorrect: #EF4444;
-  --char-caret: #2563EB;
-  --flash-shadow: inset 0 0 15px rgba(239, 68, 68, 0.15);
+  --ribbon-hover: rgba(248, 250, 252, 0.09);   /* ホバーでほんのり明転 */
+  --ribbon-active-bg: rgba(248, 250, 252, 0.14);
+  --ribbon-border: #334155;
 }
 
 /* Global Reset & Base */
@@ -68,68 +51,104 @@ body {
   overflow-x: hidden;
 }
 
-/* App Wrapper */
 .app-container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  position: relative;
   background-color: var(--bg-app);
-  transition: background-color 0.2s ease, box-shadow 0.1s ease;
 }
 
-/* ミス時フラッシュ（コンテナ全体またはタイピングエリア） */
-.app-container.flash-miss {
-  box-shadow: var(--flash-shadow);
-  animation: flash-pulse 0.18s ease-out;
-}
-
-@keyframes flash-pulse {
-  0% {
-    box-shadow: var(--flash-shadow);
-  }
-  100% {
-    box-shadow: inset 0 0 0 rgba(0, 0, 0, 0);
-  }
-}
-
-/* Header & Navigation */
-.app-header {
+/* ==========================================================================
+   上部リボン（ヘッダー）と一体化した均等タブナビゲーション
+   ========================================================================== */
+.ribbon-header {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
-  padding: 1.25rem 2rem;
-  border-bottom: 1px solid var(--border-subtle);
+  height: 64px;
+  padding: 0 2rem;
+  border-bottom: 1px solid var(--ribbon-border);
   background-color: var(--bg-app);
 }
 
-.brand-title {
-  font-size: 1.15rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+.ribbon-left {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  min-width: 170px;
 }
 
-.brand-badge {
-  font-size: 0.75rem;
-  padding: 0.15rem 0.5rem;
-  border-radius: 9999px;
-  background-color: var(--border-subtle);
+.brand-logo {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+/* リボンと同化し、均等に並ぶタブ */
+.ribbon-nav {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  flex: 1;
+  max-width: 680px;
+  margin: 0 1rem;
+}
+
+.ribbon-tab-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  padding: 0 0.5rem;
+  color: var(--text-muted);
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+/* マウスが来たら暗転（Light）/ 明転（Slate） */
+.ribbon-tab-btn:hover {
+  background-color: var(--ribbon-hover);
+  color: var(--text-primary);
+}
+
+/* アクティブ状態：下部アクセントライン ＋ 背景ハイライト */
+.ribbon-tab-btn.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--char-caret);
+  background-color: var(--ribbon-active-bg);
+}
+
+.ribbon-tab-title {
+  font-size: 0.925rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.ribbon-tab-sub {
+  font-size: 0.72rem;
   color: var(--text-muted);
   font-weight: 500;
-  text-transform: uppercase;
 }
 
-.header-controls {
+.ribbon-tab-btn.active .ribbon-tab-sub {
+  color: var(--char-caret);
+  font-weight: 600;
+}
+
+/* リボン右端：テーマ切り替え */
+.ribbon-right {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  justify-content: flex-end;
+  min-width: 170px;
 }
 
-/* Theme Switcher Toggle */
-.theme-switch-group {
+.theme-toggle-group {
   display: inline-flex;
   align-items: center;
   background-color: var(--bg-card);
@@ -138,179 +157,108 @@ body {
   padding: 0.2rem;
 }
 
-.theme-btn {
+.theme-pill {
   background: transparent;
   border: none;
   border-radius: 9999px;
-  padding: 0.35rem 0.8rem;
-  font-size: 0.825rem;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
   color: var(--text-muted);
   transition: all 0.15s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
 }
 
-.theme-btn.active {
+.theme-pill:hover {
+  color: var(--text-primary);
+}
+
+.theme-pill.active {
   background-color: var(--bg-app);
   color: var(--text-primary);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-/* Main Typing Arena */
+/* ==========================================================================
+   メインエリア
+   ========================================================================== */
 .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1.5rem;
+  padding: 2.5rem 1.5rem;
   max-width: 900px;
   margin: 0 auto;
   width: 100%;
 }
 
-/* Stats / HUD Bar */
-.stats-bar {
-  display: flex;
-  gap: 2.5rem;
-  margin-bottom: 3.5rem;
-  justify-content: center;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.stat-label {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.25rem;
-  font-weight: 500;
-}
-
-.stat-value {
-  font-family: var(--font-mono);
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-/* Word Card & Context */
+/* ==========================================================================
+   タイピング表示ボックス（さっきのUIの質感を保持）
+   ========================================================================== */
 .typing-box {
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2.5rem 2rem;
-  border-radius: 12px;
+  padding: 3.5rem 2.5rem;
+  border-radius: 14px;
   background-color: var(--bg-card);
   border: 1px solid var(--border-subtle);
   position: relative;
   transition: all 0.2s ease;
 }
 
-.typing-box.box-flashing {
-  box-shadow: var(--flash-shadow);
-  border-color: var(--char-incorrect);
-}
-
-/* Word meaning & category */
 .word-meta {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 .word-category {
   font-size: 0.75rem;
   color: var(--text-muted);
   background-color: var(--border-subtle);
-  padding: 0.2rem 0.5rem;
+  padding: 0.25rem 0.6rem;
   border-radius: 4px;
+  font-weight: 600;
 }
 
 .word-meaning {
   font-size: 1.15rem;
   color: var(--text-muted);
   font-weight: 500;
+  text-align: center;
 }
 
-/* Typing Characters Line */
+/* 「ここが表示画面」表示ライン */
 .typing-line {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  font-size: 3rem;
-  line-height: 1.2;
+  font-size: 2.8rem;
+  line-height: 1.3;
   letter-spacing: -0.01em;
   min-height: 4.5rem;
-  margin: 1rem 0;
-  cursor: text;
+  margin: 1rem 0 2rem 0;
+  text-align: center;
 }
 
-/* ==========================================================================
-   CSS Classes Defined in Specifications
-   ========================================================================== */
-
-/* 文字の基本設定（等幅・文字詰め） */
-.typing-char {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  transition: color 0.08s ease;
-  position: relative;
-  display: inline-block;
-  white-space: pre;
+.typing-text-placeholder {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
-/* 未入力：輪郭は見えるが主張しない */
-.char-untyped {
-  color: var(--char-untyped);
-  user-select: none;
-}
-
-/* 正解：くっきり表示 */
-.char-correct {
-  color: var(--char-correct);
-  font-weight: 500;
-}
-
-/* エラー：即座に認知できる赤 */
-.char-incorrect {
-  color: var(--char-incorrect);
-  background-color: rgba(239, 68, 68, 0.1);
-  border-radius: 2px;
-  text-decoration: underline;
-  text-decoration-color: var(--char-incorrect);
-  text-underline-offset: 4px;
-}
-
-/* Caret / Cursor */
-.caret-indicator {
-  position: absolute;
-  left: 0;
-  bottom: -2px;
-  width: 100%;
-  height: 3px;
-  background-color: var(--char-caret);
-  border-radius: 1px;
-  animation: caret-pulse 1s infinite ease-in-out;
-}
-
-/* If caret is at the trailing end */
+/* カーソル（点滅） */
 .trailing-caret {
   display: inline-block;
-  width: 3px;
+  width: 3.5px;
   height: 2.8rem;
   background-color: var(--char-caret);
-  margin-left: 2px;
+  margin-left: 6px;
   border-radius: 1px;
   animation: caret-pulse 1s infinite ease-in-out;
   vertical-align: middle;
@@ -325,48 +273,211 @@ body {
   }
 }
 
-/* Example sentence */
 .example-sentence {
-  margin-top: 1.5rem;
+  margin-top: 1rem;
   font-size: 0.95rem;
   color: var(--text-muted);
   text-align: center;
-  max-width: 600px;
-  line-height: 1.5;
+  max-width: 650px;
+  line-height: 1.6;
 }
 
-/* Footer / Instructions */
-.app-footer {
-  padding: 1.5rem;
-  text-align: center;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  border-top: 1px solid var(--border-subtle);
+/* ==========================================================================
+   機能5：記録（統計 & グラフ）画面
+   ========================================================================== */
+.analytics-view {
+  width: 100%;
   display: flex;
-  justify-content: center;
-  gap: 1.5rem;
+  flex-direction: column;
+  gap: 1.75rem;
 }
 
-.key-hint {
-  display: inline-flex;
-  align-items: center;
+.analytics-header {
+  text-align: left;
+}
+
+.analytics-header h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.analytics-header p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.analytics-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1rem;
+}
+
+.analytics-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
   gap: 0.35rem;
 }
 
-kbd {
-  font-family: var(--font-mono);
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: 4px;
-  padding: 0.15rem 0.4rem;
+.card-label {
   font-size: 0.75rem;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-/* Hidden input for capturing mobile/IME keystrokes if needed */
-.invisible-input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-  left: -9999px;
+.card-value {
+  font-family: var(--font-mono);
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.card-value.highlight-accent {
+  color: var(--char-caret);
+}
+
+.card-caption {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* グラフエリア */
+.analytics-chart-box {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chart-header h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.chart-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.chart-legend {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dot-wpm {
+  background-color: var(--char-caret);
+}
+
+.dot-acc {
+  background-color: #10B981;
+}
+
+.chart-visual-wrapper {
+  width: 100%;
+}
+
+.chart-svg {
+  width: 100%;
+  height: auto;
+  max-height: 180px;
+}
+
+.chart-x-axis {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 1.5rem 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* 履歴テーブル */
+.analytics-history-box {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 1.5rem;
+}
+
+.analytics-history-box h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.history-table th {
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.history-table td {
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.history-table tr:last-child td {
+  border-bottom: none;
+}
+
+.type-tag {
+  font-family: var(--font-sans);
+  background-color: var(--border-subtle);
+  color: var(--text-muted);
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   フッター
+   ========================================================================== */
+.app-footer {
+  padding: 1.25rem;
+  text-align: center;
+  font-size: 0.825rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-subtle);
 }

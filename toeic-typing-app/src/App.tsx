@@ -1,49 +1,63 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
 
-interface WordItem {
-  id: number;
-  word: string;
+type FunctionTabId = "func1" | "func2" | "func3" | "func4" | "func5";
+
+interface TabItemInfo {
+  id: FunctionTabId;
+  label: string;
+  subLabel: string;
+  category: string;
+  displayMain: string;
   meaning: string;
-  partOfSpeech: string;
   example: string;
 }
 
-const SAMPLE_WORDS: WordItem[] = [
+const TABS_CONFIG: TabItemInfo[] = [
   {
-    id: 1,
-    word: "schedule",
-    meaning: "日程、予定",
-    partOfSpeech: "n./v.",
-    example: "The project is running on schedule.",
+    id: "func1",
+    label: "機能1",
+    subLabel: "単語",
+    category: "単語 / Core Vocab",
+    displayMain: "ここが表示画面",
+    meaning: "ここに単語の意味や品詞が表示されます",
+    example: "The project is running on schedule.（ここに例文が表示されます）",
   },
   {
-    id: 2,
-    word: "negotiate",
-    meaning: "交渉する、取り決める",
-    partOfSpeech: "v.",
-    example: "We need to negotiate a new contract with the supplier.",
+    id: "func2",
+    label: "機能2",
+    subLabel: "熟語",
+    category: "熟語 / Business Phrases",
+    displayMain: "ここが表示画面",
+    meaning: "ここにイディオム・定型表現の意味が表示されます",
+    example: "We look forward to working with you.（ここに例文が表示されます）",
   },
   {
-    id: 3,
-    word: "presentation",
-    meaning: "発表、プレゼンテーション",
-    partOfSpeech: "n.",
-    example: "Her presentation impressed the executive board.",
+    id: "func3",
+    label: "機能3",
+    subLabel: "短文",
+    category: "短文 / Sentences",
+    displayMain: "ここが表示画面",
+    meaning: "ここに短文の日本語訳が表示されます",
+    example: "Please find the attached invoice for your confirmation.",
   },
   {
-    id: 4,
-    word: "budget",
-    meaning: "予算、経費",
-    partOfSpeech: "n.",
-    example: "The department stayed well within its annual budget.",
+    id: "func4",
+    label: "機能4",
+    subLabel: "実践文",
+    category: "実践文 / Long Texts",
+    displayMain: "ここが表示画面",
+    meaning: "ここに実践文・Eメール全体の翻訳が表示されます",
+    example: "Thank you for contacting customer support. We will respond within 24 hours.",
   },
   {
-    id: 5,
-    word: "strategy",
-    meaning: "戦略、方策",
-    partOfSpeech: "n.",
-    example: "A clear strategy is essential for market growth.",
+    id: "func5",
+    label: "機能5",
+    subLabel: "記録",
+    category: "記録 / 統計 & グラフ",
+    displayMain: "",
+    meaning: "",
+    example: "",
   },
 ];
 
@@ -51,138 +65,53 @@ type Theme = "light" | "slate";
 
 function App() {
   const [theme, setTheme] = useState<Theme>("light");
-  const [currentWordIndex, setCurrentWordIndex] = useState(0);
-  const [typedChars, setTypedChars] = useState<string[]>([]);
-  const [isFlashing, setIsFlashing] = useState(false);
-  const [correctKeyCount, setCorrectKeyCount] = useState(0);
-  const [totalKeyCount, setTotalKeyCount] = useState(0);
-  const [startTime, setStartTime] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<FunctionTabId>("func1");
 
-  const flashTimeoutRef = useRef<number | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const currentItem = SAMPLE_WORDS[currentWordIndex % SAMPLE_WORDS.length];
-  const targetWord = currentItem.word;
-
-  // テーマ属性を document.documentElement / コンテナに適用
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
-  const triggerMissFlash = useCallback(() => {
-    setIsFlashing(true);
-    if (flashTimeoutRef.current) {
-      window.clearTimeout(flashTimeoutRef.current);
-    }
-    flashTimeoutRef.current = window.setTimeout(() => {
-      setIsFlashing(false);
-    }, 150);
-  }, []);
-
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      // ショートカットキー除外
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-      if (!startTime) {
-        setStartTime(Date.now());
-      }
-
-      if (e.key === "Backspace") {
-        e.preventDefault();
-        setTypedChars((prev) => prev.slice(0, -1));
-        return;
-      }
-
-      if (e.key === "Tab" || e.key === "Escape") {
-        e.preventDefault();
-        // リセット / 単語スキップ
-        setTypedChars([]);
-        setCurrentWordIndex((prev) => (prev + 1) % SAMPLE_WORDS.length);
-        return;
-      }
-
-      // 1文字の英数字・記号のみ受付
-      if (e.key.length === 1) {
-        e.preventDefault();
-        const nextIndex = typedChars.length;
-        if (nextIndex >= targetWord.length) {
-          return;
-        }
-
-        const expectedChar = targetWord[nextIndex];
-        const isMatch = e.key === expectedChar;
-
-        setTotalKeyCount((prev) => prev + 1);
-        if (isMatch) {
-          setCorrectKeyCount((prev) => prev + 1);
-        } else {
-          triggerMissFlash();
-        }
-
-        const nextTyped = [...typedChars, e.key];
-        setTypedChars(nextTyped);
-
-        // 単語完了判定
-        if (nextTyped.length === targetWord.length) {
-          const isAllCorrect = nextTyped.every(
-            (char, idx) => char === targetWord[idx]
-          );
-          if (isAllCorrect) {
-            setTimeout(() => {
-              setTypedChars([]);
-              setCurrentWordIndex((prev) => (prev + 1) % SAMPLE_WORDS.length);
-            }, 120);
-          }
-        }
-      }
-    },
-    [startTime, typedChars, targetWord, triggerMissFlash]
-  );
-
-  useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [handleKeyDown]);
-
-  const accuracy =
-    totalKeyCount > 0
-      ? Math.round((correctKeyCount / totalKeyCount) * 100)
-      : 100;
-
-  const wpm =
-    startTime && correctKeyCount > 0
-      ? Math.round(
-          correctKeyCount / 5 / Math.max((Date.now() - startTime) / 60000, 0.01)
-        )
-      : 0;
+  const currentTab = TABS_CONFIG.find((tab) => tab.id === activeTab) || TABS_CONFIG[0];
 
   return (
-    <div
-      ref={containerRef}
-      className={`app-container ${isFlashing ? "flash-miss" : ""}`}
-      data-theme={theme}
-    >
-      <header className="app-header">
-        <div className="brand-title">
-          <span>TOEIC Typing</span>
-          <span className="brand-badge">Core Vocab</span>
+    <div className="app-container" data-theme={theme}>
+      {/* 上部リボン（ヘッダー） */}
+      <header className="ribbon-header">
+        <div className="ribbon-left">
+          <div className="brand-logo">TOEIC Typing</div>
         </div>
 
-        <div className="header-controls">
-          <div className="theme-switch-group">
+        {/* 上のリボンと同化し、均等に並んだ機能タブ */}
+        <nav className="ribbon-nav" aria-label="機能ナビゲーション">
+          {TABS_CONFIG.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                className={`ribbon-tab-btn ${isActive ? "active" : ""}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                <span className="ribbon-tab-title">{tab.label}</span>
+                <span className="ribbon-tab-sub">{tab.subLabel}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* テーマ切り替え */}
+        <div className="ribbon-right">
+          <div className="theme-toggle-group">
             <button
               type="button"
-              className={`theme-btn ${theme === "light" ? "active" : ""}`}
+              className={`theme-pill ${theme === "light" ? "active" : ""}`}
               onClick={() => setTheme("light")}
             >
               Light
             </button>
             <button
               type="button"
-              className={`theme-btn ${theme === "slate" ? "active" : ""}`}
+              className={`theme-pill ${theme === "slate" ? "active" : ""}`}
               onClick={() => setTheme("slate")}
             >
               Slate
@@ -191,72 +120,162 @@ function App() {
         </div>
       </header>
 
+      {/* メイン画面 */}
       <main className="main-content">
-        <div className="stats-bar">
-          <div className="stat-item">
-            <span className="stat-label">Accuracy</span>
-            <span className="stat-value">{accuracy}%</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">WPM</span>
-            <span className="stat-value">{wpm}</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">Word</span>
-            <span className="stat-value">
-              {currentWordIndex + 1}/{SAMPLE_WORDS.length}
-            </span>
-          </div>
-        </div>
+        {activeTab === "func5" ? (
+          /* ==========================================================
+             機能5：記録（統計 & グラフ）画面
+             ========================================================== */
+          <div className="analytics-view">
+            <div className="analytics-header">
+              <h2>機能5：学習記録 & パフォーマンス分析</h2>
+              <p>統計データと打鍵推移グラフを一元管理するダッシュボードです。</p>
+            </div>
 
-        <div className={`typing-box ${isFlashing ? "box-flashing" : ""}`}>
-          <div className="word-meta">
-            <span className="word-category">{currentItem.partOfSpeech}</span>
-            <span className="word-meaning">{currentItem.meaning}</span>
+            {/* サマリーカード */}
+            <div className="analytics-cards-grid">
+              <div className="analytics-card">
+                <span className="card-label">平均精度 (Accuracy)</span>
+                <span className="card-value highlight-accent">98%</span>
+                <span className="card-caption">目標: 95%以上</span>
+              </div>
+              <div className="analytics-card">
+                <span className="card-label">平均速度 (WPM)</span>
+                <span className="card-value">62</span>
+                <span className="card-caption">Words Per Minute</span>
+              </div>
+              <div className="analytics-card">
+                <span className="card-label">総打鍵数 (Keystrokes)</span>
+                <span className="card-value">1,840</span>
+                <span className="card-caption">累計キー入力</span>
+              </div>
+              <div className="analytics-card">
+                <span className="card-label">完了アイテム数</span>
+                <span className="card-value">42</span>
+                <span className="card-caption">単語・文章クリア数</span>
+              </div>
+            </div>
+
+            {/* 打鍵推移グラフ */}
+            <div className="analytics-chart-box">
+              <div className="chart-header">
+                <div>
+                  <h3>WPM & 正解率推移</h3>
+                  <span className="chart-subtitle">直近セッションの成長グラフ</span>
+                </div>
+                <div className="chart-legend">
+                  <span className="legend-item"><span className="legend-dot dot-wpm"></span> WPM</span>
+                  <span className="legend-item"><span className="legend-dot dot-acc"></span> 精度 (%)</span>
+                </div>
+              </div>
+
+              <div className="chart-visual-wrapper">
+                <svg viewBox="0 0 600 180" className="chart-svg">
+                  <line x1="30" y1="30" x2="580" y2="30" stroke="var(--border-subtle)" strokeDasharray="3 3" />
+                  <line x1="30" y1="80" x2="580" y2="80" stroke="var(--border-subtle)" strokeDasharray="3 3" />
+                  <line x1="30" y1="130" x2="580" y2="130" stroke="var(--border-subtle)" strokeDasharray="3 3" />
+                  <line x1="30" y1="160" x2="580" y2="160" stroke="var(--border-subtle)" />
+
+                  <path
+                    d="M 50 140 Q 150 115, 240 90 T 400 65 T 560 45"
+                    fill="none"
+                    stroke="var(--char-caret)"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M 50 65 Q 150 55, 240 50 T 400 45 T 560 40"
+                    fill="none"
+                    stroke="#10B981"
+                    strokeWidth="2.5"
+                    strokeDasharray="4 2"
+                    strokeLinecap="round"
+                  />
+
+                  <circle cx="50" cy="140" r="4" fill="var(--char-caret)" />
+                  <circle cx="240" cy="90" r="4" fill="var(--char-caret)" />
+                  <circle cx="400" cy="65" r="4" fill="var(--char-caret)" />
+                  <circle cx="560" cy="45" r="4" fill="var(--char-caret)" />
+
+                  <circle cx="50" cy="65" r="4" fill="#10B981" />
+                  <circle cx="240" cy="50" r="4" fill="#10B981" />
+                  <circle cx="400" cy="45" r="4" fill="#10B981" />
+                  <circle cx="560" cy="40" r="4" fill="#10B981" />
+                </svg>
+                <div className="chart-x-axis">
+                  <span>セッション 1</span>
+                  <span>セッション 2</span>
+                  <span>セッション 3</span>
+                  <span>最新</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 履歴テーブル */}
+            <div className="analytics-history-box">
+              <h3>直近のセッション履歴</h3>
+              <table className="history-table">
+                <thead>
+                  <tr>
+                    <th>種類</th>
+                    <th>判定精度</th>
+                    <th>速度 (WPM)</th>
+                    <th>打鍵数</th>
+                    <th>日時</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span className="type-tag">機能1 (単語)</span></td>
+                    <td>99%</td>
+                    <td>68</td>
+                    <td>240</td>
+                    <td>本日</td>
+                  </tr>
+                  <tr>
+                    <td><span className="type-tag">機能2 (熟語)</span></td>
+                    <td>97%</td>
+                    <td>61</td>
+                    <td>380</td>
+                    <td>昨日</td>
+                  </tr>
+                  <tr>
+                    <td><span className="type-tag">機能3 (短文)</span></td>
+                    <td>95%</td>
+                    <td>54</td>
+                    <td>420</td>
+                    <td>3日前</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
+        ) : (
+          /* ==========================================================
+             機能1〜4：元のUIそのまま＋タイピング表示画面
+             （タイピング判定はナシ、中央に「ここが表示画面」を表示）
+             ========================================================== */
+          <div className="typing-box">
+            <div className="word-meta">
+              <span className="word-category">{currentTab.category}</span>
+              <span className="word-meaning">{currentTab.meaning}</span>
+            </div>
 
-          <div className="typing-line">
-            {targetWord.split("").map((expectedChar, idx) => {
-              const isTyped = idx < typedChars.length;
-              const inputChar = typedChars[idx];
-              const isCaret = idx === typedChars.length;
-
-              let statusClass = "char-untyped";
-              if (isTyped) {
-                statusClass =
-                  inputChar === expectedChar
-                    ? "char-correct"
-                    : "char-incorrect";
-              }
-
-              return (
-                <span
-                  key={idx}
-                  className={`typing-char ${statusClass}`}
-                >
-                  {expectedChar}
-                  {isCaret && <span className="caret-indicator" />}
-                </span>
-              );
-            })}
-            {typedChars.length >= targetWord.length && (
+            <div className="typing-line">
+              <span className="typing-text-placeholder">
+                {currentTab.displayMain}
+              </span>
               <span className="trailing-caret" />
-            )}
-          </div>
+            </div>
 
-          <p className="example-sentence">{currentItem.example}</p>
-        </div>
+            <p className="example-sentence">{currentTab.example}</p>
+          </div>
+        )}
       </main>
 
       <footer className="app-footer">
-        <div className="key-hint">
-          <kbd>Backspace</kbd> 訂正
-        </div>
-        <div className="key-hint">
-          <kbd>Tab</kbd> スキップ
-        </div>
-        <div className="key-hint">
-          そのままキーボードで入力
+        <div className="footer-hint">
+          リボンの「機能1〜機能5」をクリックして画面を切り替えられます
         </div>
       </footer>
     </div>
