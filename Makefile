@@ -38,11 +38,11 @@ lint-ts: ## TypeScript の型チェック (tsc --noEmit)
 	cd $(APP_DIR) && pnpm exec tsc --noEmit
 
 lint-rust: ## Rust コードのフォーマット検証 (cargo fmt) と静的解析 (cargo clippy)
-	cd $(APP_DIR) && cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
-	cd $(APP_DIR) && cargo clippy --manifest-path src-tauri/Cargo.toml
+	cd $(TAURI_DIR) && cargo fmt -- --check
+	cd $(TAURI_DIR) && cargo clippy -- -D warnings
 
 test-rust: ## Rust のユニットテスト実行 (cargo nextest)
-	cd $(APP_DIR) && cargo nextest run --manifest-path src-tauri/Cargo.toml --no-tests=pass
+	cd $(TAURI_DIR) && cargo nextest run --no-tests=pass
 
 build-tauri: ## Tauri アプリのビルド検証 (--no-bundle)
 	cd $(APP_DIR) && pnpm tauri build --no-bundle
