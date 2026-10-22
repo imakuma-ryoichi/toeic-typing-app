@@ -66,10 +66,22 @@ type Theme = "light" | "slate";
 function App() {
   const [theme, setTheme] = useState<Theme>("light");
   const [activeTab, setActiveTab] = useState<FunctionTabId>("func1");
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
+
+  // Escapeキーでモーダルを閉じる
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isDetailModalOpen) {
+        setIsDetailModalOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isDetailModalOpen]);
 
   const currentTab = TABS_CONFIG.find((tab) => tab.id === activeTab) || TABS_CONFIG[0];
 
@@ -248,6 +260,17 @@ function App() {
                   </tr>
                 </tbody>
               </table>
+
+              {/* 成績右下の案内リンク */}
+              <div className="analytics-history-footer">
+                <button
+                  type="button"
+                  className="analytics-detail-link"
+                  onClick={() => setIsDetailModalOpen(true)}
+                >
+                  &gt;&gt; 詳細な記録・成績
+                </button>
+              </div>
             </div>
           </div>
         ) : (
@@ -278,6 +301,109 @@ function App() {
           リボンの「機能1〜機能5」をクリックして画面を切り替えられます
         </div>
       </footer>
+
+      {/* 詳細な記録・成績モーダル */}
+      {isDetailModalOpen && (
+        <div className="modal-backdrop" onClick={() => setIsDetailModalOpen(false)}>
+          <div
+            className="modal-container"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-title"
+          >
+            <div className="modal-header">
+              <div>
+                <h3 id="modal-title">詳細な記録 & 成績</h3>
+                <p className="modal-subtitle">キーストローク分析、苦手キー、詳細履歴の設定・確認ができます。</p>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setIsDetailModalOpen(false)}
+                aria-label="モーダルを閉じる"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {/* 苦手キー・誤打率分析 */}
+              <div className="detail-section">
+                <h4>苦手キー分析 (ミス率 TOP 4)</h4>
+                <div className="weak-keys-grid">
+                  <div className="weak-key-card">
+                    <span className="key-char">B</span>
+                    <span className="key-miss-rate">ミス率 6.8%</span>
+                    <span className="key-note">人差し指の到達</span>
+                  </div>
+                  <div className="weak-key-card">
+                    <span className="key-char">P</span>
+                    <span className="key-miss-rate">ミス率 5.4%</span>
+                    <span className="key-note">小指の伸ばし</span>
+                  </div>
+                  <div className="weak-key-card">
+                    <span className="key-char">C</span>
+                    <span className="key-miss-rate">ミス率 4.9%</span>
+                    <span className="key-note">中指の曲げ</span>
+                  </div>
+                  <div className="weak-key-card">
+                    <span className="key-char">X</span>
+                    <span className="key-miss-rate">ミス率 4.1%</span>
+                    <span className="key-note">薬指の引き</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 詳細スタッツ */}
+              <div className="detail-section">
+                <h4>パフォーマンス詳細メトリクス</h4>
+                <div className="detail-stats-grid">
+                  <div className="detail-stat-item">
+                    <span className="stat-name">一貫性 (Consistency)</span>
+                    <span className="stat-val">84.2%</span>
+                  </div>
+                  <div className="detail-stat-item">
+                    <span className="stat-name">修正打鍵数 (Corrections)</span>
+                    <span className="stat-val">38 回</span>
+                  </div>
+                  <div className="detail-stat-item">
+                    <span className="stat-name">最高速度 (Peak WPM)</span>
+                    <span className="stat-val">78 WPM</span>
+                  </div>
+                  <div className="detail-stat-item">
+                    <span className="stat-name">平均打鍵間隔 (Interval)</span>
+                    <span className="stat-val">192 ms</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 履歴・データ管理（詳細設定） */}
+              <div className="detail-section">
+                <h4>詳細データ設定・管理</h4>
+                <div className="detail-action-row">
+                  <button type="button" className="action-btn-secondary" onClick={() => alert("CSVエクスポート機能はフェーズ3で実装予定です。")}>
+                    📊 成績データをCSV出力
+                  </button>
+                  <button type="button" className="action-btn-secondary danger" onClick={() => alert("ログリセット機能はフェーズ3で実装予定です。")}>
+                    🗑️ 記録ログのクリア
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="modal-action-btn"
+                onClick={() => setIsDetailModalOpen(false)}
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
