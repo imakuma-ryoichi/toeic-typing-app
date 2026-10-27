@@ -178,3 +178,17 @@ GitHub ActionsのCI環境（`.github/workflows/ci.yml` および `Dockerfile`）
 
 本リポジトリ内のソースコードは、[MIT License](https://opensource.org/licenses/MIT) の下で公開・提供されています。
 
+
+## 免責事項 / Disclaimer
+
+### 日本語
+- **商標について**: TOEIC is a registered trademark of ETS. 本プロジェクトは個人が独自に開発した非公式の学習ツールであり、Educational Testing Service（ETS）および一般財団法人 国際ビジネスコミュニケーション協会（IIBC）による承認、後援、その他の提携関係はありません。
+- **コンテンツの権利について**: 本リポジトリには、公式問題集や市販の参考書などの著作権を侵害するテキスト・音声データは一切含まれていません。学習用データは自作の例文、またはパブリックドメイン・オープンライセンスのデータのみを使用（またはユーザー自身によるインポートを想定）しています。
+- **責任の制限**: 本ソフトウェアの利用によって生じた直接的・間接的な損害について、開発者は一切の責任を負いません。
+
+---
+
+### English
+- **Trademark Notice**: TOEIC is a registered trademark of ETS. This project is an independent, unofficial study tool and is not endorsed, sponsored, or affiliated with Educational Testing Service (ETS) or IIBC.
+- **Copyrighted Materials**: This repository does not contain any copyrighted materials, including questions, texts, or audio from official test materials or commercial textbooks. All practice contents are either original, public domain/open-licensed, or imported directly by the user.
+- **Limitation of Liability**: The software is provided "as is", without warranty of any kind. The author shall not be held liable for any damages or issues arising from the use of this software.
