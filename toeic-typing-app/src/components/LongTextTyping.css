@@ -1,5 +1,5 @@
 /* ==========================================================================
-   LongTextTyping.css - 機能4（実践文）2行スライドタイピングUI
+   LongTextTyping.css - 1行ストリームタイピング（右から生えてくるコンベア方式）
    ========================================================================== */
 
 .longtext-container {
@@ -9,7 +9,7 @@
   gap: 1.25rem;
 }
 
-/* 上部コントローラーバー：文章切り替え ＆ 進捗 ＆ リセット */
+/* 上部コントローラーバー：文章切り替え ＆ 改行オプション ＆ 進捗 ＆ リセット */
 .longtext-top-bar {
   display: flex;
   align-items: center;
@@ -51,10 +51,55 @@
   border-color: var(--char-caret);
 }
 
+/* 改行オプション（トグルスイッチUI） */
+.break-mode-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.mode-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.mode-toggle-pill {
+  display: inline-flex;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.mode-btn {
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mode-btn:hover {
+  color: var(--text-primary);
+}
+
+.mode-btn.is-active {
+  background-color: var(--char-caret);
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* 進捗バー表示 */
 .longtext-meta-center {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 0.75rem;
 }
 
 .progress-pill {
@@ -88,6 +133,14 @@
   transition: width 0.25s ease-out;
 }
 
+.progress-pct-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  min-width: 32px;
+}
+
 .longtext-top-actions {
   display: flex;
   align-items: center;
@@ -112,7 +165,7 @@
 }
 
 /* ==========================================================================
-   2行タイピングステージ
+   タイピングステージカード（単一行・1行特化設計）
    ========================================================================== */
 .typing-stage-card {
   width: 100%;
@@ -130,10 +183,10 @@
   user-select: none;
 }
 
-/* ミスタイプ時の赤フラッシュ */
+/* ミスタイプ時の赤フラッシュ ＆ シェイク */
 .typing-stage-card.mistake-flash {
-  animation: stageMistakeShake 0.28s ease-in-out;
-  border-color: #EF4444;
+  animation: stageMistakeShake 0.25s ease-in-out;
+  border-color: #ef4444;
 }
 
 @keyframes stageMistakeShake {
@@ -142,10 +195,10 @@
     transform: translateX(0);
   }
   25% {
-    transform: translateX(-3px);
+    transform: translateX(-4px);
   }
   50% {
-    transform: translateX(3px);
+    transform: translateX(4px);
   }
   75% {
     transform: translateX(-2px);
@@ -156,311 +209,263 @@
   }
 }
 
-.lines-display-window {
+/* 1行ストリームタイピング専用レイアウト */
+.single-stream-window {
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
+  gap: 1.5rem;
   width: 100%;
   position: relative;
 }
 
-/* 各行スロット共通 */
-.text-line-slot {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  transition: all 0.2s ease;
-  position: relative;
-}
-
-/* 行ヘッダー（行バッジ + 日本語訳） */
-.line-meta-header {
+/* 日本語訳バナー（上部） */
+.stream-translation-banner {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-}
-
-.line-badge {
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.18rem 0.5rem;
-  border-radius: 4px;
-}
-
-.line-badge.active-badge {
-  background-color: var(--char-caret);
-  color: #FFFFFF;
-}
-
-.line-badge.preview-badge {
-  background-color: var(--border-subtle);
-  color: var(--text-muted);
-}
-
-.line-japanese-trans {
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--text-muted);
-  line-height: 1.4;
-}
-
-/* 英文タイピングエリア：単語途中の改行を完全防止し、常に1行で美しく表示 */
-.line-english-row {
-  font-family: var(--font-mono);
-  font-size: clamp(1.15rem, 1.45vw, 1.35rem);
-  line-height: 1.5;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  min-height: 2.3rem;
-  display: flex;
-  align-items: center;
-  position: relative;
-}
-
-.line-english-row::-webkit-scrollbar {
-  display: none;
-}
-
-/* 単語ラッパー：単語の途中で改行させない */
-.typing-word {
-  display: inline-block;
-  white-space: pre;
-}
-
-/* 1行目（入力中：Active） */
-.active-slot {
-  padding: 1rem 1.25rem;
+  gap: 0.85rem;
+  padding: 0.75rem 1.1rem;
   background-color: var(--bg-app);
+  border-radius: 8px;
   border: 1px solid var(--border-subtle);
   border-left: 4px solid var(--char-caret);
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  min-height: 48px;
 }
 
-/* 2行目（プレビュー：Upcoming） */
-.preview-slot {
-  padding: 0.85rem 1.25rem;
-  opacity: 0.5;
-  border: 1px dashed var(--border-subtle);
-  border-left: 4px solid transparent;
-  border-radius: 8px;
-  background-color: transparent;
-  transition: opacity 0.2s ease;
+.translation-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background-color: var(--char-caret);
+  color: #ffffff;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  white-space: nowrap;
 }
 
-.preview-slot .line-english-row {
-  color: var(--text-muted);
-  font-size: clamp(1.05rem, 1.35vw, 1.25rem);
-}
-
-.preview-end-marker {
-  font-style: italic;
-  font-size: 0.95rem;
-  color: var(--text-muted);
-  padding: 0.5rem 0;
+.translation-text {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+  transition: color 0.15s ease;
 }
 
 /* ==========================================================================
-   アニメーション：「一行完ぺきに打てたら消えて、下が上に上がり、次が下に表示」
+   1行コンベア・ビューポート（打つごとに右から生えてくるストリーム）
    ========================================================================== */
+.stream-conveyor-viewport {
+  position: relative;
+  width: 100%;
+  height: 90px;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.03);
+  /* 左右端にグラデーションマスクをかけ、文字が自然に右から出現し左へ消える */
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 6%,
+    black 90%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 6%,
+    black 90%,
+    transparent 100%
+  );
+}
 
-/* 上に消えていく行（打鍵完了した行） */
-.slot-exiting-up {
+/* 打鍵カーソル固定ガイド（上下のターゲットインジケーター） */
+.fixed-target-guide {
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
+  bottom: 0;
+  left: clamp(120px, 28%, 260px);
+  width: 2px;
+  background: transparent;
   pointer-events: none;
-  animation: lineDisappearUp 0.24s cubic-bezier(0.2, 0, 0.2, 1) forwards;
   z-index: 5;
 }
 
-@keyframes lineDisappearUp {
-  0% {
-    transform: translateY(0);
-    opacity: 0.95;
-  }
-  100% {
-    transform: translateY(-30px);
-    opacity: 0;
-  }
-}
-
-/* 下から上がってきた行（新しくActiveになる行） */
-.slot-promoted-up {
-  animation: linePromoteUp 0.24s cubic-bezier(0.2, 0, 0.2, 1) forwards;
-}
-
-@keyframes linePromoteUp {
-  0% {
-    transform: translateY(28px);
-    opacity: 0.75;
-  }
-  100% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-/* 下から新しく出現する行（新しいPreview行） */
-.slot-appearing-down {
-  animation: lineAppearDown 0.24s cubic-bezier(0.2, 0, 0.2, 1) forwards;
-}
-
-@keyframes lineAppearDown {
-  0% {
-    transform: translateY(22px);
-    opacity: 0;
-  }
-  100% {
-    transform: translateY(0);
-    opacity: 0.5;
-  }
-}
-
-/* ==========================================================================
-   文字単位の判定スタイル (Correct / Incorrect / Untyped / Caret)
-   ========================================================================== */
-.typing-char {
-  position: relative;
-  display: inline-block;
-  transition: color 0.05s ease;
-}
-
-/* 正解文字 */
-.char-correct {
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-/* ミス文字 */
-.char-incorrect {
-  color: #EF4444;
-  background-color: rgba(239, 68, 68, 0.15);
-  border-radius: 2px;
-  font-weight: 700;
-  text-decoration: underline wavy #EF4444;
-}
-
-/* 空白のミス表示 */
-.char-incorrect.char-space {
-  background-color: rgba(239, 68, 68, 0.3);
-  box-shadow: 0 0 0 1px #EF4444;
-}
-
-/* 未入力文字 */
-.char-untyped {
-  color: var(--text-muted);
-  opacity: 0.45;
-  font-weight: 400;
-}
-
-/* カーソル（キャレット） */
-.char-caret {
+/* 1行で横に伸び、translateXでスムーズにスクロールするトラック */
+.stream-text-track {
+  display: flex;
+  align-items: center;
+  white-space: pre;
   position: absolute;
   left: 0;
-  top: 12%;
-  bottom: 12%;
-  width: 2.5px;
+  top: 0;
+  bottom: 0;
+  will-change: transform;
+  transition: transform 0.14s cubic-bezier(0.2, 0, 0, 1);
+  font-family: var(--font-mono);
+  font-size: 2rem;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+/* 1文字単位のスタイリング */
+.typing-char {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-width: 0.6em;
+  transition: color 0.1s ease;
+}
+
+/* スペース文字の可視化 */
+.typing-char.char-space {
+  min-width: 0.55em;
+}
+
+.typing-char.char-space.char-active-target::after {
+  content: "␣";
+  position: absolute;
+  bottom: 12px;
+  font-size: 0.9rem;
+  color: var(--char-caret);
+  opacity: 0.7;
+}
+
+/* 入力済み正解文字（落ち着いたトーンで視認性を保ちつつ左へ流れる） */
+.typing-char.char-correct {
+  color: #10b981;
+}
+
+[data-theme="slate"] .typing-char.char-correct {
+  color: #34d399;
+}
+
+/* 入力ミス文字（赤色強調） */
+.typing-char.char-incorrect {
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.15);
+  border-radius: 3px;
+}
+
+/* まだ打っていない未来の文字（右から生えてくる文字） */
+.typing-char.char-untyped {
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
+/* 現在打つべきターゲット文字 */
+.typing-char.char-active-target {
+  color: var(--text-primary);
+  font-weight: 700;
+  background-color: rgba(37, 99, 235, 0.08);
+  border-radius: 4px;
+}
+
+[data-theme="slate"] .typing-char.char-active-target {
+  background-color: rgba(56, 189, 248, 0.15);
+}
+
+/* ターゲット文字の下に表示されるキャレット */
+.target-char-caret {
+  position: absolute;
+  bottom: 12px;
+  left: 0;
+  right: 0;
+  height: 3px;
   background-color: var(--char-caret);
-  border-radius: 1px;
-  animation: caretBlink 0.9s infinite ease-in-out;
-  pointer-events: none;
-  z-index: 2;
+  border-radius: 2px;
+  animation: targetCaretPulse 0.9s infinite ease-in-out;
 }
 
-.char-caret.caret-trailing {
-  left: auto;
-  right: -2.5px;
-}
-
-@keyframes caretBlink {
+@keyframes targetCaretPulse {
   0%, 100% {
     opacity: 1;
+    transform: scaleX(1);
   }
   50% {
-    opacity: 0.15;
+    opacity: 0.35;
+    transform: scaleX(0.85);
   }
 }
 
-/* ==========================================================================
-   キー操作のヒントバー
-   ========================================================================== */
-.stage-footer-hints {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 1.25rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--border-subtle);
-  font-size: 0.78rem;
-  color: var(--text-muted);
+.char-trailing-end {
+  width: 14px;
 }
 
-.hint-keys {
+/* リアルタイムメトリクスチップ */
+.stream-live-metrics {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  justify-content: flex-end;
+  gap: 0.75rem;
 }
 
-.kbd-badge {
-  display: inline-block;
-  padding: 0.15rem 0.45rem;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--text-primary);
+.metric-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   background-color: var(--bg-app);
   border: 1px solid var(--border-subtle);
-  border-radius: 4px;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+  border-radius: 6px;
+  padding: 0.28rem 0.65rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.chip-label {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.chip-value {
+  color: var(--text-primary);
+  font-weight: 700;
 }
 
 /* ==========================================================================
-   完了画面 (Completion View)
+   クリア（完了）画面
    ========================================================================== */
 .completion-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 2.5rem 1.5rem;
-  gap: 1.5rem;
-  animation: fadeInModal 0.3s ease-out;
+  padding: 1rem 0;
+  animation: completionFadeIn 0.3s ease-out;
 }
 
-@keyframes fadeInModal {
+@keyframes completionFadeIn {
   from {
     opacity: 0;
-    transform: scale(0.97);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: translateY(0);
   }
 }
 
 .completion-icon {
   font-size: 3rem;
-  line-height: 1;
+  margin-bottom: 0.5rem;
 }
 
 .completion-header h2 {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 0.35rem;
 }
 
 .completion-header p {
-  font-size: 0.9rem;
   color: var(--text-muted);
+  font-size: 0.92rem;
+  margin-bottom: 1.75rem;
 }
 
 .completion-metrics-grid {
@@ -468,31 +473,31 @@
   grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
   width: 100%;
-  max-width: 580px;
-  margin: 0.5rem 0;
+  max-width: 640px;
+  margin-bottom: 2rem;
 }
 
 .completion-metric-card {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  align-items: center;
+  justify-content: center;
   padding: 1rem 0.75rem;
   background-color: var(--bg-app);
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .comp-metric-label {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  margin-bottom: 0.4rem;
 }
 
 .comp-metric-val {
   font-family: var(--font-mono);
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -505,26 +510,67 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-top: 0.5rem;
 }
 
 .btn-primary-action {
   background-color: var(--char-caret);
-  color: #FFFFFF;
+  color: #ffffff;
   border: none;
-  border-radius: 8px;
-  padding: 0.65rem 1.4rem;
-  font-size: 0.9rem;
+  border-radius: 6px;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.15s ease, transform 0.1s ease;
 }
 
 .btn-primary-action:hover {
-  opacity: 0.92;
+  opacity: 0.9;
   transform: translateY(-1px);
 }
 
-.btn-primary-action:active {
-  transform: translateY(0);
+/* ==========================================================================
+   フッター操作ヒント
+   ========================================================================== */
+.stage-footer-hints {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.hint-keys {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.kbd-badge {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 0.15rem 0.45rem;
+  color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+  .completion-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stream-text-track {
+    font-size: 1.5rem;
+  }
+
+  .longtext-top-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }

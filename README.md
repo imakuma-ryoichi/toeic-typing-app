@@ -4,27 +4,32 @@
 
 ---
 
-## 開発フロー (Makefile)
+## 開発フロー (justfile)
 
-プロジェクトルート直下で `make` コマンドを使用することで、最小限のキータッチでローカル起動や各種検証を実行できます。
+プロジェクトルート直下で [just](https://github.com/casey/just) を使用することで、最小限のキータッチでローカル起動や各種検証・ビルドを実行できます。
 
-- **日常の開発起動**: `make`
-- **コマンド一覧の確認**: `make help`
-- **コミット・プッシュ前のローカル検証**: `make ci`
+- **コマンド一覧の確認**: `just` または `just -l`
+- **フロントエンドのビルド**: `just build`
+- **Webローカル開発起動**: `just dev`
+- **デスクトップアプリ起動**: `just dev-desktop`
+- **コミット・プッシュ前のローカル検証**: `just ci` (または `just check`)
 
-### 主なターゲット一覧
+### 主なコマンド一覧
 
 | コマンド | 説明 |
 |---|---|
-| `make` / `make dev` | Webブラウザ向けに高速ローカル開発起動（`cd toeic-typing-app && pnpm dev`） |
-| `make dev-desktop` | デスクトップアプリとしてローカル開発起動（`cd toeic-typing-app && pnpm tauri dev`） |
-| `make help` | 利用可能なコマンドの一覧と説明をターミナルに表示 |
-| `make ci` / `make check` | GitHub Actions CI と同等の完全検証（型チェック、fmt、clippy、nextest、ビルド）を一括実行 |
-| `make lint-ts` | TypeScript の型チェック（`tsc --noEmit`） |
-| `make lint-rust` | Rust のコードフォーマット検証（`cargo fmt`）および静的解析（`cargo clippy`） |
-| `make test-rust` | Rust のユニットテスト実行（`cargo nextest run --no-tests=pass`） |
-| `make build-tauri` | Tauri アプリのビルド検証（`pnpm tauri build --no-bundle`） |
-| `make clean` | ビルド成果物（`target/`, `dist/`）や `node_modules` のクリーンアップ |
+| `just` | 利用可能なコマンドの一覧と説明をターミナルに表示（デフォルト） |
+| `just dev` | Webブラウザ向けに高速ローカル開発起動（`cd toeic-typing-app && pnpm dev`） |
+| `just dev-desktop` | デスクトップアプリとしてローカル開発起動（`cd toeic-typing-app && pnpm tauri dev`） |
+| `just build` | Webフロントエンドをビルド（`tsc && vite build`） |
+| `just build-tauri` | Tauri アプリのビルド検証（`pnpm tauri build --no-bundle`） |
+| `just build-all` | フロントエンドとTauri両方をビルド |
+| `just lint` | TypeScript型チェック + Rust fmt & clippy を一括実行 |
+| `just lint-ts` | TypeScript の型チェック（`tsc --noEmit`） |
+| `just lint-rust` | Rust のコードフォーマット検証（`cargo fmt`）および静的解析（`cargo clippy`） |
+| `just test` | Rust のユニットテスト実行（`cargo nextest run --no-tests=pass`） |
+| `just ci` / `just check` | GitHub Actions CI と同等の完全検証を一括実行 |
+| `just clean` | ビルド成果物（`target/`, `dist/`）や `node_modules` のクリーンアップ |
 
 ---
 
