@@ -929,6 +929,7 @@ function App() {
             genre={genre}
             tabMode={activeTab as TypingTabMode}
             goals={goals}
+            sessions={sessions}
             onSessionComplete={handleSessionComplete}
           />
         )}

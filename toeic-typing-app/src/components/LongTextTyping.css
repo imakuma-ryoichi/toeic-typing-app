@@ -390,16 +390,6 @@
   color: #34d399;
 }
 
-/* 入力ミス文字（現在進行形で間違っている場合：赤文字） */
-.typing-char.char-incorrect {
-  color: #dc2626;
-  font-weight: 700;
-}
-
-[data-theme="slate"] .typing-char.char-incorrect {
-  color: #f87171;
-}
-
 /* まだ打っていない未来の文字（右から生えてくる文字） */
 .typing-char.char-untyped {
   color: var(--text-muted);
@@ -418,17 +408,70 @@
 }
 
 /* ==========================================================================
-   文字色による3段階の区別（背景なし）
-   - 緑   : 一発で正解した文字 (.char-correct)
-   - オレンジ: 1回以上ミスした後に正しく打ち直した文字 (.char-once-missed.char-correct)
-   - 赤   : 現在ミスしている文字 (.char-incorrect)
+   文字色による区別
+   - 緑     : 一発で正解した文字 (.char-correct)
+   - オレンジ: 1回以上ミスした後に正しく打ち直した文字 (.char-once-missed)
+   - 赤     : 現在ミスしている文字 (.char-incorrect) - 太文字化して区別
    ========================================================================== */
-.typing-char.char-once-missed.char-correct {
+.typing-char.char-once-missed.char-correct,
+.typing-char.char-once-missed {
   color: #ea580c;
+  font-weight: 600;
 }
 
-[data-theme="slate"] .typing-char.char-once-missed.char-correct {
+[data-theme="slate"] .typing-char.char-once-missed.char-correct,
+[data-theme="slate"] .typing-char.char-once-missed {
   color: #fb923c;
+}
+
+/* 入力ミス文字（現在ミス中：赤文字 ＆ 太文字で見分けやすく） */
+.typing-char.char-incorrect {
+  color: #dc2626 !important;
+  font-weight: 800 !important;
+  text-shadow: 0 0 1px rgba(220, 38, 38, 0.4);
+}
+
+[data-theme="slate"] .typing-char.char-incorrect {
+  color: #f87171 !important;
+  text-shadow: 0 0 1px rgba(248, 113, 113, 0.4);
+}
+
+/* ==========================================================================
+   スペース文字の背景色設定
+   - オレンジ背景: 1回以上ミスしたスペース (.char-space.char-once-missed)
+   - 赤背景      : 現在ミス中のスペース (.char-space.char-incorrect) ＆ 太文字
+   ========================================================================== */
+.typing-char.char-space.char-once-missed {
+  background-color: rgba(234, 88, 12, 0.3) !important;
+  border-bottom: 2px solid #ea580c;
+  border-radius: 3px;
+}
+
+[data-theme="slate"] .typing-char.char-space.char-once-missed {
+  background-color: rgba(251, 146, 60, 0.35) !important;
+  border-bottom-color: #fb923c;
+}
+
+.typing-char.char-space.char-incorrect {
+  background-color: #dc2626 !important;
+  border-radius: 3px;
+  font-weight: 800 !important;
+  box-shadow: 0 0 8px rgba(220, 38, 38, 0.6);
+}
+
+.typing-char.char-space.char-incorrect::after {
+  content: "␣";
+  position: absolute;
+  bottom: 6px;
+  font-size: 0.95rem;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+[data-theme="slate"] .typing-char.char-space.char-incorrect {
+  background-color: #ef4444 !important;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.7);
 }
 
 /* ターゲット文字の下に表示されるキャレット */
@@ -465,9 +508,8 @@
 .completion-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 1rem 0;
+  width: 100%;
+  padding: 0.25rem 0.5rem 1rem;
   animation: completionFadeIn 0.3s ease-out;
 }
 
@@ -482,22 +524,114 @@
   }
 }
 
-.completion-icon {
-  font-size: 3rem;
-  margin-bottom: 0.5rem;
+/* 左上に「結果」とだけ記述 */
+.completion-top-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 0.75rem;
 }
 
-.completion-header h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
+.completion-title {
+  font-size: 1.35rem;
+  font-weight: 800;
   color: var(--text-primary);
-  margin-bottom: 0.35rem;
+  margin: 0;
+  letter-spacing: -0.01em;
 }
 
-.completion-header p {
+/* 上部：WPM推移グラフボックス */
+.completion-chart-wrapper {
+  width: 100%;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.completion-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.completion-chart-sub {
+  font-size: 0.8rem;
+  font-weight: 700;
   color: var(--text-muted);
-  font-size: 0.9rem;
-  margin-bottom: 1.5rem;
+}
+
+.completion-chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.legend-dot.current-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--char-caret);
+  margin-right: 3px;
+}
+
+.legend-line.goal-line {
+  display: inline-block;
+  width: 14px;
+  height: 2px;
+  border-top: 2px dashed #ea580c;
+  margin-right: 3px;
+}
+
+.completion-svg-box {
+  width: 100%;
+  height: 150px;
+}
+
+.completion-trend-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.svg-goal-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.svg-wpm-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--text-primary);
+}
+
+.svg-wpm-label.is-current-wpm {
+  fill: var(--char-caret);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.svg-session-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  fill: var(--text-muted);
+}
+
+.svg-session-label.is-current-session {
+  fill: var(--char-caret);
+  font-weight: 700;
 }
 
 .completion-metrics-grid {

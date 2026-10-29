@@ -32,6 +32,7 @@ interface LongTextTypingProps {
   genre?: TypingGenre;
   tabMode?: TypingTabMode;
   goals?: UserGoals;
+  sessions?: SessionRecord[];
   onSessionComplete?: (record: SessionRecord) => void;
 }
 
@@ -58,6 +59,7 @@ export function LongTextTyping({
   genre = "toeic",
   tabMode = "func4",
   goals = DEFAULT_GOALS,
+  sessions = [],
   onSessionComplete,
 }: LongTextTypingProps) {
   const [selectedTextIdx, setSelectedTextIdx] = useState<number>(0);
@@ -72,6 +74,7 @@ export function LongTextTyping({
   const [keystrokes, setKeystrokes] = useState<number>(0);
   const [mistakes, setMistakes] = useState<number>(0);
   const [hasErrorFlash, setHasErrorFlash] = useState<boolean>(false);
+  const [currentMistakeIndex, setCurrentMistakeIndex] = useState<number | null>(null);
 
   // 1回でもミスした文字インデックスの記録（オレンジ文字表示 & 一発精度算出用）
   const [missedIndices, setMissedIndices] = useState<Set<number>>(new Set());
@@ -192,6 +195,7 @@ export function LongTextTyping({
     setEndTime(null);
     setKeystrokes(0);
     setMistakes(0);
+    setCurrentMistakeIndex(null);
     setMissedIndices(new Set());
     setCompletedSentencesMissedCount(0);
     setHasErrorFlash(false);
@@ -279,6 +283,7 @@ export function LongTextTyping({
       // Backspaceキー処理（1文字削除 / Ctrl等で単語一括削除）
       if (e.key === "Backspace") {
         e.preventDefault();
+        setCurrentMistakeIndex(null);
         setUserInput((prev) => {
           if (!prev) return "";
           if (e.ctrlKey || e.metaKey || e.altKey) {
@@ -314,47 +319,55 @@ export function LongTextTyping({
         }
 
         const expectedChar = targetText[currentLength];
-        const nextInput = userInput + e.key;
 
-        // 日本語：入力全体がローマ字として有効な接頭辞かどうかで判定（tu/tsu 等の揺れを許容）
-        let isCorrectKey: boolean;
-        let isFinished: boolean;
+        // 日本語（機能1）と英語（機能2〜4）の正誤判定
+        let isCorrectKey = false;
+        let isFinished = false;
+        let nextInput = userInput;
+
         if (isJapanese) {
-          const hasPriorError = romajiState ? romajiState.validLength < userInput.length : false;
-          if (hasPriorError) {
-            isCorrectKey = e.key === expectedChar;
-            isFinished = false;
-          } else {
-            const resolved = resolveRomaji(sourceText, nextInput);
-            isCorrectKey = resolved.valid;
+          const testInput = userInput + e.key;
+          const resolved = resolveRomaji(sourceText, testInput);
+          isCorrectKey = resolved.valid;
+          if (isCorrectKey) {
+            nextInput = testInput;
             isFinished =
-              resolved.valid &&
-              resolved.romaji === nextInput &&
+              resolved.romaji === testInput &&
               resolved.consumedKana >= sourceText.length;
           }
         } else {
           isCorrectKey = e.key === expectedChar;
-          isFinished = nextInput === targetText;
+          if (isCorrectKey) {
+            nextInput = userInput + expectedChar;
+            isFinished = nextInput.length === targetText.length;
+          }
         }
 
         const nextKeystrokes = keystrokes + 1;
-        const nextMistakes = isCorrectKey ? mistakes : mistakes + 1;
         setKeystrokes(nextKeystrokes);
 
-        let updatedMissedIndices = missedIndices;
         if (!isCorrectKey) {
+          // タイプミス発生：
+          // 1. ミスカウント増加
+          // 2. この文字インデックスをミス履歴（オレンジ・一発精度判定用）に追加
+          // 3. 現在ミス中フラグ（赤色・赤背景・太文字表示用）をセット
+          // 4. 赤フラッシュアニメーション起動
+          // ※カーソルは進めず、正しいキーが打たれるまで留まる
+          const nextMistakes = mistakes + 1;
           setMistakes(nextMistakes);
-          updatedMissedIndices = new Set(missedIndices);
-          updatedMissedIndices.add(currentLength);
-          setMissedIndices(updatedMissedIndices);
-
+          setMissedIndices((prev) => new Set(prev).add(currentLength));
+          setCurrentMistakeIndex(currentLength);
           setHasErrorFlash(true);
           if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
           errorTimeoutRef.current = window.setTimeout(() => {
             setHasErrorFlash(false);
           }, 240);
+          return;
         }
 
+        // 正しいキーが打たれた場合：
+        // 現在ミス中フラグを解除して文字を進める
+        setCurrentMistakeIndex(null);
         setUserInput(nextInput);
 
         // 完答チェック
@@ -372,7 +385,7 @@ export function LongTextTyping({
                   ? Math.max(
                       0,
                       Math.round(
-                        ((nextKeystrokes - nextMistakes) / nextKeystrokes) * 100
+                        ((nextKeystrokes - mistakes) / nextKeystrokes) * 100
                       )
                     )
                   : 100;
@@ -399,25 +412,26 @@ export function LongTextTyping({
                 normalAccuracy: calcNormalAcc,
                 wpm: calcWpm,
                 keystrokes: nextKeystrokes,
-                mistakes: nextMistakes,
+                mistakes: mistakes,
               });
             }
           };
 
           if (breakMode === "continuous") {
             // 連続モード：全文章完走
-            finalizeCompletion(updatedMissedIndices.size);
+            finalizeCompletion(missedIndices.size);
           } else {
             // 改行あり（文ごと）モード
             const isLastSentence = currentSentenceIdx + 1 >= sentences.length;
             const totalMissedSoFar =
-              completedSentencesMissedCount + updatedMissedIndices.size;
+              completedSentencesMissedCount + missedIndices.size;
             if (isLastSentence) {
               finalizeCompletion(totalMissedSoFar);
             } else {
               // 次の文へスライド
               setCompletedSentencesMissedCount(totalMissedSoFar);
               setMissedIndices(new Set());
+              setCurrentMistakeIndex(null);
               setCurrentSentenceIdx((prev) => prev + 1);
               setUserInput("");
             }
@@ -491,6 +505,69 @@ export function LongTextTyping({
       ? Math.round((userInput.length / targetText.length) * 100)
       : 0;
 
+  // 結果画面用の WPM 推移データ（同じ機能の過去セッション + 今回の完了セッション）
+  const completionWpmHistory = useMemo(() => {
+    const matched = sessions.filter((s) => s.tabMode === tabMode);
+    const sorted = [...matched].reverse();
+    const pastSubset = sorted.slice(-7);
+    const items = pastSubset.map((s, i) => ({
+      label: `#${i + 1}`,
+      wpm: s.wpm,
+      isCurrent: false,
+    }));
+    items.push({
+      label: "今回",
+      wpm: wpm,
+      isCurrent: true,
+    });
+    return items;
+  }, [sessions, tabMode, wpm]);
+
+  // WPM 推移グラフ SVG 座標計算
+  const chartWidth = 640;
+  const chartHeight = 150;
+  const padLeft = 44;
+  const padRight = 36;
+  const padTop = 22;
+  const padBottom = 26;
+  const plotW = chartWidth - padLeft - padRight;
+  const plotH = chartHeight - padTop - padBottom;
+
+  const wpmVals = completionWpmHistory.map((d) => d.wpm);
+  const minWpm = Math.max(0, Math.min(goals.wpm - 15, ...wpmVals) - 5);
+  const maxWpm = Math.max(goals.wpm + 15, ...wpmVals) + 5;
+  const rangeWpm = Math.max(10, maxWpm - minWpm);
+
+  const getChartX = (idx: number) => {
+    if (completionWpmHistory.length <= 1) return padLeft + plotW / 2;
+    return padLeft + (idx / (completionWpmHistory.length - 1)) * plotW;
+  };
+
+  const getChartY = (val: number) => {
+    const clamped = Math.max(minWpm, Math.min(maxWpm, val));
+    return padTop + plotH - ((clamped - minWpm) / rangeWpm) * plotH;
+  };
+
+  const goalY = getChartY(goals.wpm);
+  const chartPoints = completionWpmHistory.map((d, i) => ({
+    x: getChartX(i),
+    y: getChartY(d.wpm),
+    wpm: d.wpm,
+    label: d.label,
+    isCurrent: d.isCurrent,
+  }));
+
+  const chartPathD = chartPoints
+    .map((pt, i) => `${i === 0 ? "M" : "L"} ${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`)
+    .join(" ");
+
+  const chartAreaD =
+    chartPoints.length > 0
+      ? `${chartPathD} L ${chartPoints[chartPoints.length - 1].x.toFixed(1)} ${(
+          padTop + plotH
+        ).toFixed(1)} L ${chartPoints[0].x.toFixed(1)} ${(padTop + plotH).toFixed(1)} Z`
+      : "";
+
   return (
     <div className={`longtext-container tab-mode-${tabMode}`}>
       {/* メインタイピングステージ（目線の位置に合わせて上部に配置） */}
@@ -501,13 +578,138 @@ export function LongTextTyping({
       >
         {isCompleted ? (
           /* ==========================================================
-             完了画面（一発精度・普通の精度・WPM・目標達成度を表示）
+             完了画面（左上に「結果」、上部にWPM推移グラフ、下部にメトリクス）
              ========================================================== */
           <div className="completion-container">
-            <div className="completion-icon">🎉</div>
-            <div className="completion-header">
-              <h2>{currentText.title} クリア！</h2>
-              <p>すべての入力を完了しました。</p>
+            {/* 左上に「結果」とだけ記述 */}
+            <div className="completion-top-header">
+              <h2 className="completion-title">結果</h2>
+            </div>
+
+            {/* 上部：WPM の推移グラフ */}
+            <div className="completion-chart-wrapper">
+              <div className="completion-chart-header">
+                <span className="completion-chart-sub">
+                  WPM 打鍵速度の推移（{tabMeta.modeTag}）
+                </span>
+                <span className="completion-chart-legend">
+                  <span className="legend-dot current-dot" /> 今回: {wpm} WPM
+                  <span className="legend-line goal-line" /> 目標: {goals.wpm} WPM
+                </span>
+              </div>
+
+              <div className="completion-svg-box">
+                <svg
+                  viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+                  className="completion-trend-svg"
+                  preserveAspectRatio="xMidYMid meet"
+                >
+                  <defs>
+                    <linearGradient
+                      id="compWpmGrad"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="0%"
+                        stopColor="var(--char-caret)"
+                        stopOpacity="0.22"
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor="var(--char-caret)"
+                        stopOpacity="0.0"
+                      />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Y軸 目標ライン（破線） */}
+                  <line
+                    x1={padLeft}
+                    y1={goalY}
+                    x2={chartWidth - padRight}
+                    y2={goalY}
+                    stroke="#ea580c"
+                    strokeWidth="1.5"
+                    strokeDasharray="4 3"
+                    opacity="0.8"
+                  />
+                  <text
+                    x={chartWidth - padRight + 4}
+                    y={goalY + 3}
+                    className="svg-goal-label"
+                    fill="#ea580c"
+                  >
+                    目標 {goals.wpm}
+                  </text>
+
+                  {/* エリア塗りつぶし */}
+                  {chartAreaD && (
+                    <path d={chartAreaD} fill="url(#compWpmGrad)" />
+                  )}
+
+                  {/* 実績折れ線 */}
+                  <path
+                    d={chartPathD}
+                    fill="none"
+                    stroke="var(--char-caret)"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+
+                  {/* データポイント */}
+                  {chartPoints.map((pt, i) => (
+                    <g key={`pt-${i}`}>
+                      {pt.isCurrent && (
+                        <circle
+                          cx={pt.x}
+                          cy={pt.y}
+                          r="8"
+                          fill="var(--char-caret)"
+                          opacity="0.25"
+                        />
+                      )}
+                      <circle
+                        cx={pt.x}
+                        cy={pt.y}
+                        r={pt.isCurrent ? 5.5 : 3.8}
+                        fill={
+                          pt.isCurrent
+                            ? "var(--char-caret)"
+                            : "var(--bg-card)"
+                        }
+                        stroke="var(--char-caret)"
+                        strokeWidth="2"
+                      />
+                      {/* ポイント上部のWPM数値 */}
+                      <text
+                        x={pt.x}
+                        y={pt.y - 8}
+                        textAnchor="middle"
+                        className={`svg-wpm-label ${
+                          pt.isCurrent ? "is-current-wpm" : ""
+                        }`}
+                      >
+                        {pt.wpm}
+                      </text>
+                      {/* X軸ラベル */}
+                      <text
+                        x={pt.x}
+                        y={chartHeight - 6}
+                        textAnchor="middle"
+                        className={`svg-session-label ${
+                          pt.isCurrent ? "is-current-session" : ""
+                        }`}
+                      >
+                        {pt.label}
+                      </text>
+                    </g>
+                  ))}
+                </svg>
+              </div>
             </div>
 
             <div className="completion-metrics-grid">
@@ -615,13 +817,13 @@ export function LongTextTyping({
               >
                 {targetText.split("").map((char, index) => {
                   const isCurrent = index === userInput.length;
+                  const isCurrentMistaken = isCurrent && currentMistakeIndex === index;
                   const wasOnceMissed = missedIndices.has(index);
                   let charState = "char-untyped";
                   if (index < userInput.length) {
-                    charState =
-                      userInput[index] === char
-                        ? "char-correct"
-                        : "char-incorrect";
+                    charState = "char-correct";
+                  } else if (isCurrentMistaken) {
+                    charState = "char-incorrect";
                   }
 
                   return (
