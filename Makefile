@@ -2,8 +2,8 @@
 .PHONY: help setup setup-rust setup-node setup-pnpm setup-just setup-sys install doctor
 
 SHELL := /bin/bash
-# 直前にインストールされたツールも即座に検知できるよう PATH を明示
-export PATH := $(HOME)/.cargo/bin:$(HOME)/.local/bin:/usr/local/bin:$(PATH)
+# 直前にインストールされたツールやユーザー領域バイナリも即座に検知できるよう PATH を明示
+export PATH := $(HOME)/.cargo/bin:$(HOME)/.local/bin:$(HOME)/.local/share/pnpm:/usr/local/bin:$(PATH)
 
 help: ## 利用可能なコマンド一覧を表示
 	@echo "利用可能なコマンド:"
@@ -73,16 +73,17 @@ setup-node: ## Node.js の確認（未導入の場合のみ Node.js v20 LTS を�
 		echo "  [OK] Node.js は既に導入済みです: $$(node --version)"; \
 	fi
 
-setup-pnpm: ## pnpm の確認（未導入の場合のみインストール）
+setup-pnpm: ## pnpm の確認（管理者権限不要のユーザー領域に安全にインストール）
 	@echo ">>> [4/5] pnpm の確認..."
 	@if ! command -v pnpm >/dev/null 2>&1; then \
 		echo "  [未検出] pnpm をインストールします..."; \
-		if command -v corepack >/dev/null 2>&1; then \
-			corepack enable && corepack prepare pnpm@latest --activate; \
-		elif command -v npm >/dev/null 2>&1; then \
+		mkdir -p "$$HOME/.local/bin"; \
+		if command -v corepack >/dev/null 2>&1 && corepack enable --install-directory "$$HOME/.local/bin" pnpm 2>/dev/null; then \
+			echo "  [OK] corepack を通じて ~/.local/bin/pnpm を有効化しました。"; \
+		elif command -v npm >/dev/null 2>&1 && [ "$$(id -u)" -eq 0 ]; then \
 			npm install -g pnpm; \
 		else \
-			curl -fsSL https://get.pnpm.io/install.sh | sh -; \
+			curl -fsSL https://get.pnpm.io/install.sh | SHELL=bash sh -; \
 		fi; \
 	else \
 		echo "  [OK] pnpm は既に導入済みです: $$(pnpm --version)"; \
