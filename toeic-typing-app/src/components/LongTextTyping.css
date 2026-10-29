@@ -1,0 +1,636 @@
+/* ==========================================================================
+   LongTextTyping.css - 1行ストリームタイピング（右から生えてくるコンベア方式）
+   ========================================================================== */
+
+.longtext-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* 上部コントローラーバー：文章切り替え ＆ 改行オプション ＆ 進捗 ＆ リセット */
+.longtext-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+
+.text-selector-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.genre-indicator-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.22rem 0.55rem;
+  border-radius: 5px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.genre-indicator-badge.genre-toeic {
+  background-color: rgba(37, 99, 235, 0.12);
+  color: var(--char-caret);
+  border: 1px solid rgba(37, 99, 235, 0.25);
+}
+
+.genre-indicator-badge.genre-linux {
+  background-color: rgba(16, 185, 129, 0.14);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="slate"] .genre-indicator-badge.genre-linux {
+  color: #34d399;
+}
+
+.text-select-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.text-select-dropdown {
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.text-select-dropdown:focus {
+  border-color: var(--char-caret);
+}
+
+/* 改行オプション（トグルスイッチUI） */
+.break-mode-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.mode-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.mode-toggle-pill {
+  display: inline-flex;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.mode-btn {
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mode-btn:hover {
+  color: var(--text-primary);
+}
+
+.mode-btn.is-active {
+  background-color: var(--char-caret);
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* 進捗バー表示 */
+.longtext-meta-center {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.progress-pill {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--char-caret);
+  background-color: rgba(37, 99, 235, 0.08);
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+[data-theme="slate"] .progress-pill {
+  background-color: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.25);
+}
+
+.mini-progress-track {
+  width: 90px;
+  height: 6px;
+  background-color: var(--border-subtle);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.mini-progress-fill {
+  height: 100%;
+  background-color: var(--char-caret);
+  border-radius: 9999px;
+  transition: width 0.25s ease-out;
+}
+
+.progress-pct-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  min-width: 32px;
+}
+
+.longtext-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-secondary-action {
+  background-color: var(--bg-app);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-secondary-action:hover {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+/* ==========================================================================
+   タイピングステージカード（単一行・1行特化設計）
+   ========================================================================== */
+.typing-stage-card {
+  width: 100%;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 2.25rem 2.5rem;
+  position: relative;
+  overflow: hidden;
+  min-height: 290px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  user-select: none;
+}
+
+/* ミスタイプ時の赤フラッシュ ＆ シェイク */
+.typing-stage-card.mistake-flash {
+  animation: stageMistakeShake 0.25s ease-in-out;
+  border-color: #ef4444;
+}
+
+@keyframes stageMistakeShake {
+  0% {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.45);
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    transform: translateX(0);
+  }
+}
+
+/* 1行ストリームタイピング専用レイアウト */
+.single-stream-window {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  position: relative;
+}
+
+/* 日本語訳バナー（上部） */
+.stream-translation-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 1.1rem;
+  background-color: var(--bg-app);
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  border-left: 4px solid var(--char-caret);
+  min-height: 48px;
+}
+
+.translation-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background-color: var(--char-caret);
+  color: #ffffff;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.translation-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+  transition: color 0.15s ease;
+}
+
+.translation-kana {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+   1行コンベア・ビューポート（打つごとに右から生えてくるストリーム）
+   ========================================================================== */
+.stream-conveyor-viewport {
+  position: relative;
+  width: 100%;
+  height: 92px;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.03);
+  /* 左右端にグラデーションマスクをかけ、文字が自然に右から出現し左へ消える */
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 6%,
+    black 90%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 6%,
+    black 90%,
+    transparent 100%
+  );
+}
+
+/* 打鍵カーソル固定ガイド（上下のターゲットインジケーター） */
+.fixed-target-guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: clamp(120px, 28%, 260px);
+  width: 2px;
+  background: transparent;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* 1行で横に伸び、translateXでスムーズにスクロールするトラック */
+.stream-text-track {
+  display: flex;
+  align-items: center;
+  white-space: pre;
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  will-change: transform;
+  transition: transform 0.14s cubic-bezier(0.2, 0, 0, 1);
+  font-family: var(--font-mono);
+  font-size: 2rem;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+/* 1文字単位のスタイリング */
+.typing-char {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 70%;
+  min-width: 0.6em;
+  padding: 0 1px;
+  border-radius: 4px;
+  transition: color 0.1s ease, background-color 0.12s ease;
+}
+
+/* スペース文字の可視化 */
+.typing-char.char-space {
+  min-width: 0.55em;
+}
+
+.typing-char.char-space.char-active-target::after {
+  content: "␣";
+  position: absolute;
+  bottom: 6px;
+  font-size: 0.9rem;
+  color: var(--char-caret);
+  opacity: 0.7;
+}
+
+/* 入力済み正解文字（落ち着いたトーンで視認性を保ちつつ左へ流れる） */
+.typing-char.char-correct {
+  color: #10b981;
+}
+
+[data-theme="slate"] .typing-char.char-correct {
+  color: #34d399;
+}
+
+/* 入力ミス文字（現在進行形で間違っている場合：赤文字） */
+.typing-char.char-incorrect {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+[data-theme="slate"] .typing-char.char-incorrect {
+  color: #f87171;
+}
+
+/* まだ打っていない未来の文字（右から生えてくる文字） */
+.typing-char.char-untyped {
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
+/* 現在打つべきターゲット文字 */
+.typing-char.char-active-target {
+  color: var(--text-primary);
+  font-weight: 700;
+  background-color: rgba(37, 99, 235, 0.08);
+}
+
+[data-theme="slate"] .typing-char.char-active-target {
+  background-color: rgba(56, 189, 248, 0.15);
+}
+
+/* ==========================================================================
+   文字色による3段階の区別（背景なし）
+   - 緑   : 一発で正解した文字 (.char-correct)
+   - オレンジ: 1回以上ミスした後に正しく打ち直した文字 (.char-once-missed.char-correct)
+   - 赤   : 現在ミスしている文字 (.char-incorrect)
+   ========================================================================== */
+.typing-char.char-once-missed.char-correct {
+  color: #ea580c;
+}
+
+[data-theme="slate"] .typing-char.char-once-missed.char-correct {
+  color: #fb923c;
+}
+
+/* ターゲット文字の下に表示されるキャレット */
+.target-char-caret {
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: var(--char-caret);
+  border-radius: 2px;
+  animation: targetCaretPulse 0.9s infinite ease-in-out;
+}
+
+@keyframes targetCaretPulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scaleX(0.85);
+  }
+}
+
+.char-trailing-end {
+  width: 14px;
+}
+
+/* ==========================================================================
+   クリア（完了）画面
+   ========================================================================== */
+.completion-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1rem 0;
+  animation: completionFadeIn 0.3s ease-out;
+}
+
+@keyframes completionFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.completion-icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.completion-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.35rem;
+}
+
+.completion-header p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.completion-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  width: 100%;
+  max-width: 720px;
+  margin-bottom: 1.75rem;
+}
+
+.completion-metric-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 1rem 0.75rem;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+
+.comp-metric-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.comp-metric-val {
+  font-family: var(--font-mono);
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.comp-metric-val small {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.comp-metric-val.highlight-acc {
+  color: var(--char-caret);
+}
+
+.comp-goal-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.comp-goal-badge.goal-pass {
+  background-color: rgba(16, 185, 129, 0.14);
+  color: #059669;
+}
+
+[data-theme="slate"] .comp-goal-badge.goal-pass {
+  color: #34d399;
+}
+
+.comp-goal-badge.goal-miss {
+  background-color: rgba(249, 115, 22, 0.15);
+  color: #ea580c;
+}
+
+[data-theme="slate"] .comp-goal-badge.goal-miss {
+  color: #fb923c;
+}
+
+.comp-goal-badge.neutral {
+  background-color: var(--border-subtle);
+  color: var(--text-muted);
+}
+
+.completion-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.btn-primary-action {
+  background-color: var(--char-caret);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.btn-primary-action:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   フッター操作ヒント
+   ========================================================================== */
+.stage-footer-hints {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.hint-keys {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.kbd-badge {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 0.15rem 0.45rem;
+  color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+  .completion-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stream-text-track {
+    font-size: 1.5rem;
+  }
+
+  .longtext-top-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

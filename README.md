@@ -4,27 +4,32 @@
 
 ---
 
-## 開発フロー (Makefile)
+## 開発フロー (justfile)
 
-プロジェクトルート直下で `make` コマンドを使用することで、最小限のキータッチでローカル起動や各種検証を実行できます。
+プロジェクトルート直下で [just](https://github.com/casey/just) を使用することで、最小限のキータッチでローカル起動や各種検証・ビルドを実行できます。
 
-- **日常の開発起動**: `make`
-- **コマンド一覧の確認**: `make help`
-- **コミット・プッシュ前のローカル検証**: `make ci`
+- **コマンド一覧の確認**: `just` または `just -l`
+- **フロントエンドのビルド**: `just build`
+- **Webローカル開発起動**: `just dev`
+- **デスクトップアプリ起動**: `just dev-desktop`
+- **コミット・プッシュ前のローカル検証**: `just ci` (または `just check`)
 
-### 主なターゲット一覧
+### 主なコマンド一覧
 
 | コマンド | 説明 |
 |---|---|
-| `make` / `make dev` | Webブラウザ向けに高速ローカル開発起動（`cd toeic-typing-app && pnpm dev`） |
-| `make dev-desktop` | デスクトップアプリとしてローカル開発起動（`cd toeic-typing-app && pnpm tauri dev`） |
-| `make help` | 利用可能なコマンドの一覧と説明をターミナルに表示 |
-| `make ci` / `make check` | GitHub Actions CI と同等の完全検証（型チェック、fmt、clippy、nextest、ビルド）を一括実行 |
-| `make lint-ts` | TypeScript の型チェック（`tsc --noEmit`） |
-| `make lint-rust` | Rust のコードフォーマット検証（`cargo fmt`）および静的解析（`cargo clippy`） |
-| `make test-rust` | Rust のユニットテスト実行（`cargo nextest run --no-tests=pass`） |
-| `make build-tauri` | Tauri アプリのビルド検証（`pnpm tauri build --no-bundle`） |
-| `make clean` | ビルド成果物（`target/`, `dist/`）や `node_modules` のクリーンアップ |
+| `just` | 利用可能なコマンドの一覧と説明をターミナルに表示（デフォルト） |
+| `just dev` | Webブラウザ向けに高速ローカル開発起動（`cd toeic-typing-app && pnpm dev`） |
+| `just dev-desktop` | デスクトップアプリとしてローカル開発起動（`cd toeic-typing-app && pnpm tauri dev`） |
+| `just build` | Webフロントエンドをビルド（`tsc && vite build`） |
+| `just build-tauri` | Tauri アプリのビルド検証（`pnpm tauri build --no-bundle`） |
+| `just build-all` | フロントエンドとTauri両方をビルド |
+| `just lint` | TypeScript型チェック + Rust fmt & clippy を一括実行 |
+| `just lint-ts` | TypeScript の型チェック（`tsc --noEmit`） |
+| `just lint-rust` | Rust のコードフォーマット検証（`cargo fmt`）および静的解析（`cargo clippy`） |
+| `just test` | Rust のユニットテスト実行（`cargo nextest run --no-tests=pass`） |
+| `just ci` / `just check` | GitHub Actions CI と同等の完全検証を一括実行 |
+| `just clean` | ビルド成果物（`target/`, `dist/`）や `node_modules` のクリーンアップ |
 
 ---
 
@@ -132,6 +137,46 @@ GitHub ActionsのCI環境（`.github/workflows/ci.yml` および `Dockerfile`）
      `toeic-typing-app/index.html` 内の `<link rel="preconnect" ...>` および Google Fonts の `<link href="https://fonts.googleapis.com/..." ...>` の行を削除します。
 
 これにより、アプリの配布パッケージ（インストーラ/バイナリ）内にフォントファイル自体が埋め込まれ、一切の外部通信なしで意図したフォントが描画されます。
+
+---
+
+## 3. 商標・権利表記およびライセンス (Licenses & Rights)
+
+### 商標および免責事項 (Trademark Notice & Disclaimer)
+- **TOEIC® 商標**:
+  TOEIC is a registered trademark of Educational Testing Service (ETS) in the United States and other countries.
+- **免責事項**:
+  本アプリケーションおよび収録されている学習用コンテンツは、個人の英語学習・開発検証を目的とした非公式の独立プロジェクトであり、Educational Testing Service (ETS) による検討、公認、推奨、または承認を受けたものではありません。
+
+---
+
+### フォントの権利表記・ライセンス (Fonts)
+本アプリケーションで指定・使用しているフォントは、各配布元のオープンソースライセンスに準拠しています。
+
+| フォント名 | 権利者 / 配布元 | ライセンス | 概要・許諾条件 |
+|---|---|---|---|
+| **JetBrains Mono** | JetBrains s.r.o. | [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) | 商用・非商用問わず無償利用、改変、再配布可能 |
+| **Noto Sans JP** | Google LLC | [SIL Open Font License 1.1 (OFL)](https://openfontlicense.org/) | Webフォント/アプリ同梱を含め無償利用、バンドル可能 |
+| **Fira Code** | Nikita Prokopov | [SIL Open Font License 1.1 (OFL)](https://openfontlicense.org/) | 等幅プログラミングフォントとしての無償利用・再配布可能 |
+
+---
+
+### 主要オープンソースソフトウェアのライセンス (Third-Party OSS)
+
+本プロジェクトのビルドおよび実行には、以下のオープンソースライブラリ・フレームワークを利用しています。
+
+| ソフトウェア / ライブラリ | 権利者 | ライセンス |
+|---|---|---|
+| **Tauri (v2)** | The Tauri Programme in The Commons Conservancy | MIT License / Apache License 2.0 |
+| **React / React DOM** | Meta Platforms, Inc. and affiliates | MIT License |
+| **Vite** | Yuxi (Evan) You & Vite Contributors | MIT License |
+| **TypeScript** | Microsoft Corporation | Apache License 2.0 |
+
+---
+
+### 本プロジェクトのライセンス (License)
+
+本リポジトリ内のソースコードは、[MIT License](https://opensource.org/licenses/MIT) の下で公開・提供されています。
 
 
 ## 免責事項 / Disclaimer
