@@ -1,113 +1,72 @@
 # typing-app
 
-フロントエンドに React + Vite + TypeScript、デスクトップ基盤に Tauri v2 (Rust) を採用しています。
+フロントエンドに React + Vite + TypeScript、デスクトップ基盤に Tauri v2 (Rust) を採用したタイピング学習アプリケーションです。
 
 ---
 
-## 開発フロー (justfile)
+## 1. セットアップと起動方法
 
-プロジェクトルート直下で [just](https://github.com/casey/just) を使用することで、最小限のキータッチでローカル起動や各種検証・ビルドを実行できます。
+プロジェクトルート（一番上のディレクトリ）から `make` と `just` を使用して、簡単に環境構築とアプリ起動が行えます。
 
-- **コマンド一覧の確認**: `just` または `just -l`
-- **フロントエンドのビルド**: `just build`
-- **Webローカル開発起動**: `just dev`
-- **デスクトップアプリ起動**: `just dev-desktop`
-- **コミット・プッシュ前のローカル検証**: `just ci` (または `just check`)
+### ① 初回環境構築（依存ツールの自動導入）
 
-### 主なコマンド一覧
+リポジトリルートで以下のコマンドを実行すると、動作に必要なツール（Rust/Cargo, Node.js, pnpm, just, および Tauri 動作に必要な OS パッケージ）の有無を自動チェックし、不足しているものだけをインストールします。
+
+```bash
+make setup
+```
+
+※すでにインストール済みのツールは自動的にスキップされます。  
+※ツールの導入状況を確認したい場合は `make doctor`（または `just doctor`）を実行できます。
+
+---
+
+### ② アプリの起動・操作 (just)
+
+環境構築後は、すべてリポジトリルートから `just` コマンドで操作できます。
+
+#### Web ブラウザ版で起動（軽量・高速なフロントエンド開発）
+デスクトップアプリを立ち上げずに、ブラウザ上で UI やタイピングロジックを確認できます。
+```bash
+just dev
+```
+起動後、ターミナルに表示される URL（通常は `http://localhost:1420/`）にブラウザでアクセスします。
+
+#### デスクトップアプリ版で起動 (Tauri)
+Rust バックエンドを含めたネイティブデスクトップウィンドウとして起動します。
+```bash
+just dev-desktop
+```
+※ `just dev-tauri` でも同様に起動できます。
+
+---
+
+### ③ 主な just コマンド一覧
+
+リポジトリルートで `just` を実行すると、利用可能なコマンド一覧が表示されます。
 
 | コマンド | 説明 |
 |---|---|
-| `just` | 利用可能なコマンドの一覧と説明をターミナルに表示（デフォルト） |
-| `just dev` | Webブラウザ向けに高速ローカル開発起動（`cd toeic-typing-app && pnpm dev`） |
-| `just dev-desktop` | デスクトップアプリとしてローカル開発起動（`cd toeic-typing-app && pnpm tauri dev`） |
+| `just` | 利用可能なコマンド一覧と説明を表示（デフォルト） |
+| `just setup` | 動作に必要な依存ツール（Rust, Node.js, pnpm, just 等）を一括導入 |
+| `just doctor` | 必要な開発ツールのインストール状況を診断・表示 |
+| `just install` | アプリの依存パッケージをインストール（`pnpm install`） |
+| `just dev` | Webブラウザ向けにローカル開発サーバーを起動（`pnpm dev`） |
+| `just dev-desktop` | デスクトップアプリとしてローカル開発起動（`pnpm tauri dev`） |
 | `just build` | Webフロントエンドをビルド（`tsc && vite build`） |
-| `just build-tauri` | Tauri アプリのビルド検証（`pnpm tauri build --no-bundle`） |
-| `just build-all` | フロントエンドとTauri両方をビルド |
-| `just lint` | TypeScript型チェック + Rust fmt & clippy を一括実行 |
-| `just lint-ts` | TypeScript の型チェック（`tsc --noEmit`） |
-| `just lint-rust` | Rust のコードフォーマット検証（`cargo fmt`）および静的解析（`cargo clippy`） |
-| `just test` | Rust のユニットテスト実行（`cargo nextest run --no-tests=pass`） |
-| `just ci` / `just check` | GitHub Actions CI と同等の完全検証を一括実行 |
-| `just clean` | ビルド成果物（`target/`, `dist/`）や `node_modules` のクリーンアップ |
+| `just build-tauri` | Tauri デスクトップアプリをビルド（`pnpm tauri build --no-bundle`） |
+| `just build-all` | フロントエンドと Tauri の両方を一括ビルド |
+| `just clean` | ビルド成果物（`dist/`, `target/`）や `node_modules` のクリーンアップ |
 
 ---
 
-## 1. ローカルでの動作確認方法 (pnpm)
-
-### 前提条件
-- **Node.js**: v20以上推奨
-- **pnpm**: v9以上推奨（`corepack enable && corepack prepare pnpm@latest --activate` などで導入可能）
-- **Rust**: 最新の Stable toolchain（`rustup` 経由）
-- **OS固有の依存パッケージ（Tauri実行時）**:
-  - **Linux**: `libwebkit2gtk-4.1-dev`, `build-essential`, `curl`, `wget`, `file`, `libxdo-dev`, `libssl-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev` 等
-  - **macOS / Windows**: 各OSの標準要件（詳細は [Tauri公式ドキュメント](https://v2.tauri.app/start/prerequisites/) を参照）
-
----
-
-### 手順
-
-アプリケーションのソースコードは `toeic-typing-app/` ディレクトリ配下にあります。まずは該当ディレクトリに移動します。
-
-```bash
-cd toeic-typing-app
-```
-
-#### ① 依存パッケージのインストール
-```bash
-pnpm install
-```
-
-#### ② ブラウザ上でのUI確認（軽量・高速なフロント開発）
-デスクトップアプリを立ち上げずに、ブラウザ上でUIやタイピングロジックの動作を確認できます。
-```bash
-pnpm dev
-```
-起動後、ターミナルに表示されるURL（通常は `http://localhost:1420/`）にブラウザでアクセスします。
-
-#### ③ Tauriデスクトップアプリとしての起動・確認
-Rustバックエンドを含めたネイティブデスクトップウィンドウとして動作確認を行います。
-```bash
-pnpm tauri dev
-```
-初回起動時はRustクレートのコンパイルが行われるため数分かかりますが、以降はキャッシュにより高速に再ビルド・ホットリロードされます。
-
-#### ④ 型チェックおよびビルドの検証
-```bash
-# TypeScriptの型チェック + フロントエンドビルド検証
-pnpm build
-
-# Tauriデスクトップアプリのビルド（インストーラ/実行可能バイナリの生成）
-pnpm tauri build
-```
-
----
-
-## 2. CIにおけるビルド高速化 (Rustリンカー: mold)
-
-GitHub ActionsのCI環境（`.github/workflows/ci.yml` および `Dockerfile`）では、Rustのビルド時間を大幅に短縮するために **高速リンカー `mold`**（および `clang`）を採用しています。
-
-- **仕組み**:
-  RustのLinux向けビルドではデフォルトの `ld` や `lld` よりも高速な `mold` をリンカーとして指定することで、特に依存関係が多いTauriアプリのリンク工程にかかる時間を大幅に削減しています。
-- **CIでの導入**:
-  ベースイメージ（Dockerfile）で `clang` と `mold` をインストールし、CIビルドを高速化しています。
-- **ローカル（Linux環境）での利用**:
-  Linux環境でローカルでも同様に `mold` を使用してビルドを高速化したい場合は、システムに `clang` と `mold` をインストールした上で、`src-tauri/.cargo/config.toml` に以下の設定を配置します：
-
-  ```toml
-  [target.x86_64-unknown-linux-gnu]
-  linker = "clang"
-  rustflags = ["-C", "link-arg=-fuse-ld=mold"]
-  ```
-
----
-
+## 2. オフライン環境での利用について
 
 ### オフライン時のフォントの挙動とローカル同梱手順
 現在 `toeic-typing-app/index.html` にて Google Fonts (`https://fonts.googleapis.com/...`) を読み込む指定があります。
 
 - **未対応時の挙動**:
-  - インターネット未接続の環境では Google Fonts へのリクエストがタイムアウトまたはスキップされ、OSのシステム標準等幅フォント（Courier, monospace など）に自動的にフォールバックされます。
+  - インターネット未接続の環境では Google Fonts へのリクエストがタイムアウトまたはスキップされ、OS のシステム標準等幅フォント（Courier, monospace など）に自動的にフォールバックされます。
   - アプリの起動やタイピング機能自体が停止・エラーになることはありませんが、フォントの字形や文字幅の見た目が変わる可能性があります。
 
 - **完全オフライン対応の手順（フォントのローカル同梱）**:
@@ -136,7 +95,7 @@ GitHub ActionsのCI環境（`.github/workflows/ci.yml` および `Dockerfile`）
   3. **`index.html` からの外部CDNリンク削除**:
      `toeic-typing-app/index.html` 内の `<link rel="preconnect" ...>` および Google Fonts の `<link href="https://fonts.googleapis.com/..." ...>` の行を削除します。
 
-これにより、アプリの配布パッケージ（インストーラ/バイナリ）内にフォントファイル自体が埋め込まれ、一切の外部通信なしで意図したフォントが描画されます。
+これにより、アプリの配布パッケージ内にフォントファイル自体が埋め込まれ、一切の外部通信なしで意図したフォントが描画されます。
 
 ---
 
@@ -177,7 +136,6 @@ GitHub ActionsのCI環境（`.github/workflows/ci.yml` および `Dockerfile`）
 ### 本プロジェクトのライセンス (License)
 
 本リポジトリ内のソースコードは、[MIT License](https://opensource.org/licenses/MIT) の下で公開・提供されています。
-
 
 ## 免責事項 / Disclaimer
 
