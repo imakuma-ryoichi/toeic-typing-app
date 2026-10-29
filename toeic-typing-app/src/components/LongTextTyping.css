@@ -28,6 +28,31 @@
   gap: 0.6rem;
 }
 
+.genre-indicator-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.22rem 0.55rem;
+  border-radius: 5px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.genre-indicator-badge.genre-toeic {
+  background-color: rgba(37, 99, 235, 0.12);
+  color: var(--char-caret);
+  border: 1px solid rgba(37, 99, 235, 0.25);
+}
+
+.genre-indicator-badge.genre-linux {
+  background-color: rgba(16, 185, 129, 0.14);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="slate"] .genre-indicator-badge.genre-linux {
+  color: #34d399;
+}
+
 .text-select-label {
   font-size: 0.78rem;
   font-weight: 600;
@@ -175,7 +200,7 @@
   padding: 2.25rem 2.5rem;
   position: relative;
   overflow: hidden;
-  min-height: 320px;
+  min-height: 290px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -257,7 +282,7 @@
 .stream-conveyor-viewport {
   position: relative;
   width: 100%;
-  height: 90px;
+  height: 92px;
   background-color: var(--bg-app);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
@@ -317,9 +342,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  height: 70%;
   min-width: 0.6em;
-  transition: color 0.1s ease;
+  padding: 0 1px;
+  border-radius: 4px;
+  transition: color 0.1s ease, background-color 0.12s ease;
 }
 
 /* スペース文字の可視化 */
@@ -330,7 +357,7 @@
 .typing-char.char-space.char-active-target::after {
   content: "␣";
   position: absolute;
-  bottom: 12px;
+  bottom: 6px;
   font-size: 0.9rem;
   color: var(--char-caret);
   opacity: 0.7;
@@ -345,11 +372,14 @@
   color: #34d399;
 }
 
-/* 入力ミス文字（赤色強調） */
+/* 入力ミス文字（現在進行形で間違っている場合：赤文字） */
 .typing-char.char-incorrect {
-  color: #ef4444;
-  background-color: rgba(239, 68, 68, 0.15);
-  border-radius: 3px;
+  color: #dc2626;
+  font-weight: 700;
+}
+
+[data-theme="slate"] .typing-char.char-incorrect {
+  color: #f87171;
 }
 
 /* まだ打っていない未来の文字（右から生えてくる文字） */
@@ -363,17 +393,39 @@
   color: var(--text-primary);
   font-weight: 700;
   background-color: rgba(37, 99, 235, 0.08);
-  border-radius: 4px;
 }
 
 [data-theme="slate"] .typing-char.char-active-target {
   background-color: rgba(56, 189, 248, 0.15);
 }
 
+/* ==========================================================================
+   1回でもミスした箇所（オレンジ背景で常時ハイライト）
+   Backspaceで戻った後や、正しく打ち直した後もオレンジ背景を維持
+   ========================================================================== */
+.typing-char.char-once-missed {
+  background-color: rgba(249, 115, 22, 0.28) !important;
+  box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.45);
+}
+
+.typing-char.char-once-missed.char-correct {
+  color: #c2410c;
+  font-weight: 600;
+}
+
+[data-theme="slate"] .typing-char.char-once-missed {
+  background-color: rgba(251, 146, 60, 0.32) !important;
+  box-shadow: inset 0 0 0 1px rgba(251, 146, 60, 0.5);
+}
+
+[data-theme="slate"] .typing-char.char-once-missed.char-correct {
+  color: #fdba74;
+}
+
 /* ターゲット文字の下に表示されるキャレット */
 .target-char-caret {
   position: absolute;
-  bottom: 12px;
+  bottom: 4px;
   left: 0;
   right: 0;
   height: 3px;
@@ -383,7 +435,8 @@
 }
 
 @keyframes targetCaretPulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scaleX(1);
   }
@@ -395,36 +448,6 @@
 
 .char-trailing-end {
   width: 14px;
-}
-
-/* リアルタイムメトリクスチップ */
-.stream-live-metrics {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.75rem;
-}
-
-.metric-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  background-color: var(--bg-app);
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-  padding: 0.28rem 0.65rem;
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-}
-
-.chip-label {
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.chip-value {
-  color: var(--text-primary);
-  font-weight: 700;
 }
 
 /* ==========================================================================
@@ -456,7 +479,7 @@
 }
 
 .completion-header h2 {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 0.35rem;
@@ -464,8 +487,8 @@
 
 .completion-header p {
   color: var(--text-muted);
-  font-size: 0.92rem;
-  margin-bottom: 1.75rem;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
 }
 
 .completion-metrics-grid {
@@ -473,8 +496,8 @@
   grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
   width: 100%;
-  max-width: 640px;
-  margin-bottom: 2rem;
+  max-width: 720px;
+  margin-bottom: 1.75rem;
 }
 
 .completion-metric-card {
@@ -482,6 +505,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.35rem;
   padding: 1rem 0.75rem;
   background-color: var(--bg-app);
   border: 1px solid var(--border-subtle);
@@ -492,18 +516,52 @@
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-muted);
-  margin-bottom: 0.4rem;
 }
 
 .comp-metric-val {
   font-family: var(--font-mono);
-  font-size: 1.5rem;
+  font-size: 1.55rem;
   font-weight: 700;
   color: var(--text-primary);
 }
 
+.comp-metric-val small {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
 .comp-metric-val.highlight-acc {
   color: var(--char-caret);
+}
+
+.comp-goal-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.comp-goal-badge.goal-pass {
+  background-color: rgba(16, 185, 129, 0.14);
+  color: #059669;
+}
+
+[data-theme="slate"] .comp-goal-badge.goal-pass {
+  color: #34d399;
+}
+
+.comp-goal-badge.goal-miss {
+  background-color: rgba(249, 115, 22, 0.15);
+  color: #ea580c;
+}
+
+[data-theme="slate"] .comp-goal-badge.goal-miss {
+  color: #fb923c;
+}
+
+.comp-goal-badge.neutral {
+  background-color: var(--border-subtle);
+  color: var(--text-muted);
 }
 
 .completion-actions {
@@ -536,6 +594,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   margin-top: 1.5rem;
   padding-top: 1rem;
   border-top: 1px solid var(--border-subtle);
@@ -546,6 +606,7 @@
 .hint-keys {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
@@ -558,6 +619,21 @@
   border-radius: 4px;
   padding: 0.15rem 0.45rem;
   color: var(--text-primary);
+}
+
+.missed-legend-chip {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  background-color: rgba(249, 115, 22, 0.22);
+  color: #c2410c;
+  border: 1px solid rgba(249, 115, 22, 0.4);
+}
+
+[data-theme="slate"] .missed-legend-chip {
+  color: #fdba74;
+  background-color: rgba(251, 146, 60, 0.25);
 }
 
 @media (max-width: 768px) {
