@@ -1101,6 +1101,273 @@ body {
 }
 
 /* ==========================================================================
+   成長予想曲線 & ベイズ統合推論パネル (GrowthForecastPanel)
+   ========================================================================== */
+.growth-forecast-box {
+  gap: 1.15rem;
+}
+
+.forecast-top-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.forecast-title-line {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.25rem;
+}
+
+.forecast-title-line h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.forecast-ai-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.16rem 0.5rem;
+  border-radius: 9999px;
+  background-color: rgba(37, 99, 235, 0.12);
+  color: var(--char-caret);
+  border: 1px solid rgba(37, 99, 235, 0.25);
+}
+
+.forecast-metric-tabs {
+  display: inline-flex;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.forecast-metric-btn {
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.forecast-metric-btn:hover {
+  color: var(--text-primary);
+}
+
+.forecast-metric-btn.is-active {
+  background-color: var(--char-caret);
+  color: #ffffff;
+}
+
+/* ブレンド比率コントロールバー */
+.forecast-blend-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+}
+
+.blend-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  font-size: 0.78rem;
+}
+
+.blend-label {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.blend-ratio-pill {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  padding: 0.15rem 0.55rem;
+}
+
+.blend-mode-tag {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.blend-reset-btn {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 0.12rem 0.45rem;
+  font-size: 0.7rem;
+  color: var(--char-caret);
+  cursor: pointer;
+}
+
+.blend-slider-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.slider-side-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.blend-range-slider {
+  width: 110px;
+  accent-color: var(--char-caret);
+  cursor: pointer;
+}
+
+/* 凡例 */
+.forecast-legend-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.1rem;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.legend-line-sample {
+  display: inline-block;
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.legend-line-sample.general {
+  background: repeating-linear-gradient(
+    to right,
+    var(--text-muted) 0,
+    var(--text-muted) 4px,
+    transparent 4px,
+    transparent 7px
+  );
+}
+
+.legend-line-sample.personal {
+  background: repeating-linear-gradient(
+    to right,
+    var(--char-caret) 0,
+    var(--char-caret) 2px,
+    transparent 2px,
+    transparent 5px
+  );
+}
+
+.legend-line-sample.goal {
+  background: repeating-linear-gradient(
+    to right,
+    #EF4444 0,
+    #EF4444 5px,
+    transparent 5px,
+    transparent 8px
+  );
+}
+
+.forecast-svg-wrapper {
+  width: 100%;
+}
+
+.forecast-svg {
+  max-height: 235px;
+}
+
+.svg-axis-text {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  fill: var(--text-muted);
+}
+
+.svg-axis-text.is-now {
+  font-weight: 700;
+  fill: var(--text-primary);
+}
+
+.svg-zone-label {
+  font-size: 10px;
+  font-weight: 600;
+  fill: var(--text-muted);
+}
+
+.svg-goal-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  fill: #EF4444;
+}
+
+.svg-point-val {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  fill: var(--text-primary);
+}
+
+/* 推論インサイト 3カード */
+.forecast-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.85rem;
+}
+
+.forecast-insight-card {
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.insight-label {
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.insight-main-val {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.insight-main-val.highlight {
+  color: var(--char-caret);
+}
+
+.insight-main-val small {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.insight-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* ==========================================================================
    フッター
    ========================================================================== */
 .app-footer {

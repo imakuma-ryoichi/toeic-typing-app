@@ -5,6 +5,7 @@ import {
   UserGoals,
   SessionRecord,
 } from "./components/LongTextTyping";
+import { GrowthForecastPanel } from "./components/GrowthForecastPanel";
 import { TypingGenre, TypingTabMode } from "./data/practicalTexts";
 
 type FunctionTabId = "func1" | "func2" | "func3" | "func4" | "func5";
@@ -739,112 +740,8 @@ function App() {
                 </div>
               </div>
 
-              {/* 打鍵推移グラフ */}
-              <div className="analytics-chart-box">
-                <div className="chart-header">
-                  <div>
-                    <h3>WPM & 一発精度・普通の精度 推移</h3>
-                    <span className="chart-subtitle">
-                      直近セッションの成長グラフ
-                    </span>
-                  </div>
-                  <div className="chart-legend">
-                    <span className="legend-item">
-                      <span className="legend-dot dot-wpm"></span> WPM
-                    </span>
-                    <span className="legend-item">
-                      <span className="legend-dot dot-acc"></span> 普通の精度 (%)
-                    </span>
-                    <span className="legend-item">
-                      <span className="legend-dot dot-first-acc"></span>{" "}
-                      一発精度 (%)
-                    </span>
-                  </div>
-                </div>
-
-                <div className="chart-visual-wrapper">
-                  <svg viewBox="0 0 600 180" className="chart-svg">
-                    <line
-                      x1="30"
-                      y1="30"
-                      x2="580"
-                      y2="30"
-                      stroke="var(--border-subtle)"
-                      strokeDasharray="3 3"
-                    />
-                    <line
-                      x1="30"
-                      y1="80"
-                      x2="580"
-                      y2="80"
-                      stroke="var(--border-subtle)"
-                      strokeDasharray="3 3"
-                    />
-                    <line
-                      x1="30"
-                      y1="130"
-                      x2="580"
-                      y2="130"
-                      stroke="var(--border-subtle)"
-                      strokeDasharray="3 3"
-                    />
-                    <line
-                      x1="30"
-                      y1="160"
-                      x2="580"
-                      y2="160"
-                      stroke="var(--border-subtle)"
-                    />
-
-                    {/* WPM ライン */}
-                    <path
-                      d="M 50 140 Q 150 115, 240 90 T 400 65 T 560 45"
-                      fill="none"
-                      stroke="var(--char-caret)"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                    />
-                    {/* 普通の精度 ライン */}
-                    <path
-                      d="M 50 55 Q 150 48, 240 44 T 400 38 T 560 32"
-                      fill="none"
-                      stroke="#10B981"
-                      strokeWidth="2.5"
-                      strokeDasharray="4 2"
-                      strokeLinecap="round"
-                    />
-                    {/* 一発精度 ライン */}
-                    <path
-                      d="M 50 78 Q 150 70, 240 62 T 400 54 T 560 46"
-                      fill="none"
-                      stroke="#F97316"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                    />
-
-                    <circle cx="50" cy="140" r="4" fill="var(--char-caret)" />
-                    <circle cx="240" cy="90" r="4" fill="var(--char-caret)" />
-                    <circle cx="400" cy="65" r="4" fill="var(--char-caret)" />
-                    <circle cx="560" cy="45" r="4" fill="var(--char-caret)" />
-
-                    <circle cx="50" cy="55" r="4" fill="#10B981" />
-                    <circle cx="240" cy="44" r="4" fill="#10B981" />
-                    <circle cx="400" cy="38" r="4" fill="#10B981" />
-                    <circle cx="560" cy="32" r="4" fill="#10B981" />
-
-                    <circle cx="50" cy="78" r="4" fill="#F97316" />
-                    <circle cx="240" cy="62" r="4" fill="#F97316" />
-                    <circle cx="400" cy="54" r="4" fill="#F97316" />
-                    <circle cx="560" cy="46" r="4" fill="#F97316" />
-                  </svg>
-                  <div className="chart-x-axis">
-                    <span>セッション 1</span>
-                    <span>セッション 2</span>
-                    <span>セッション 3</span>
-                    <span>最新</span>
-                  </div>
-                </div>
-              </div>
+              {/* 成長予想曲線 & AI統合推論グラフ（一般的データ × 自己成長データ） */}
+              <GrowthForecastPanel sessions={sessions} goals={goals} />
 
               {/* 履歴テーブル */}
               <div className="analytics-history-box">
