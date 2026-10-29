@@ -74,7 +74,6 @@ export function LongTextTyping({
   const [keystrokes, setKeystrokes] = useState<number>(0);
   const [mistakes, setMistakes] = useState<number>(0);
   const [hasErrorFlash, setHasErrorFlash] = useState<boolean>(false);
-  const [currentMistakeIndex, setCurrentMistakeIndex] = useState<number | null>(null);
 
   // 1回でもミスした文字インデックスの記録（オレンジ文字表示 & 一発精度算出用）
   const [missedIndices, setMissedIndices] = useState<Set<number>>(new Set());
@@ -195,7 +194,6 @@ export function LongTextTyping({
     setEndTime(null);
     setKeystrokes(0);
     setMistakes(0);
-    setCurrentMistakeIndex(null);
     setMissedIndices(new Set());
     setCompletedSentencesMissedCount(0);
     setHasErrorFlash(false);
@@ -283,7 +281,6 @@ export function LongTextTyping({
       // Backspaceキー処理（1文字削除 / Ctrl等で単語一括削除）
       if (e.key === "Backspace") {
         e.preventDefault();
-        setCurrentMistakeIndex(null);
         setUserInput((prev) => {
           if (!prev) return "";
           if (e.ctrlKey || e.metaKey || e.altKey) {
@@ -323,54 +320,52 @@ export function LongTextTyping({
         // 日本語（機能1）と英語（機能2〜4）の正誤判定
         let isCorrectKey = false;
         let isFinished = false;
-        let nextInput = userInput;
+        let nextInput = userInput + e.key;
 
         if (isJapanese) {
           const testInput = userInput + e.key;
           const resolved = resolveRomaji(sourceText, testInput);
           isCorrectKey = resolved.valid;
-          if (isCorrectKey) {
-            nextInput = testInput;
-            isFinished =
-              resolved.romaji === testInput &&
-              resolved.consumedKana >= sourceText.length;
-          }
+          nextInput = testInput;
+          isFinished =
+            resolved.valid &&
+            resolved.romaji === testInput &&
+            resolved.consumedKana >= sourceText.length;
         } else {
           isCorrectKey = e.key === expectedChar;
-          if (isCorrectKey) {
-            nextInput = userInput + expectedChar;
-            isFinished = nextInput.length === targetText.length;
-          }
+          // 英語は打鍵した文字でそのまま1文字進み、文字数到達で完了
+          isFinished = nextInput.length === targetText.length;
         }
 
         const nextKeystrokes = keystrokes + 1;
         setKeystrokes(nextKeystrokes);
 
+        let updatedMissedIndices = missedIndices;
+        let nextMistakes = mistakes;
+
         if (!isCorrectKey) {
           // タイプミス発生：
           // 1. ミスカウント増加
           // 2. この文字インデックスをミス履歴（オレンジ・一発精度判定用）に追加
-          // 3. 現在ミス中フラグ（赤色・赤背景・太文字表示用）をセット
-          // 4. 赤フラッシュアニメーション起動
-          // ※カーソルは進めず、正しいキーが打たれるまで留まる
-          const nextMistakes = mistakes + 1;
+          // 3. 赤フラッシュアニメーション起動
+          // ※間違えたキーでもそのまま次の文字に進む
+          nextMistakes = mistakes + 1;
           setMistakes(nextMistakes);
-          setMissedIndices((prev) => new Set(prev).add(currentLength));
-          setCurrentMistakeIndex(currentLength);
+          updatedMissedIndices = new Set(missedIndices);
+          updatedMissedIndices.add(currentLength);
+          setMissedIndices(updatedMissedIndices);
+
           setHasErrorFlash(true);
           if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
           errorTimeoutRef.current = window.setTimeout(() => {
             setHasErrorFlash(false);
           }, 240);
-          return;
         }
 
-        // 正しいキーが打たれた場合：
-        // 現在ミス中フラグを解除して文字を進める
-        setCurrentMistakeIndex(null);
+        // 間違えたキーでもそのまま入力して次へ進める
         setUserInput(nextInput);
 
-        // 完答チェック
+        // 完答チェック（最後まで文字数を打ち切ったときに完了）
         if (isFinished) {
           const finalizeCompletion = (totalUniqueMissed: number) => {
             const finishNow = Date.now();
@@ -385,7 +380,7 @@ export function LongTextTyping({
                   ? Math.max(
                       0,
                       Math.round(
-                        ((nextKeystrokes - mistakes) / nextKeystrokes) * 100
+                        ((nextKeystrokes - nextMistakes) / nextKeystrokes) * 100
                       )
                     )
                   : 100;
@@ -412,26 +407,25 @@ export function LongTextTyping({
                 normalAccuracy: calcNormalAcc,
                 wpm: calcWpm,
                 keystrokes: nextKeystrokes,
-                mistakes: mistakes,
+                mistakes: nextMistakes,
               });
             }
           };
 
           if (breakMode === "continuous") {
             // 連続モード：全文章完走
-            finalizeCompletion(missedIndices.size);
+            finalizeCompletion(updatedMissedIndices.size);
           } else {
             // 改行あり（文ごと）モード
             const isLastSentence = currentSentenceIdx + 1 >= sentences.length;
             const totalMissedSoFar =
-              completedSentencesMissedCount + missedIndices.size;
+              completedSentencesMissedCount + updatedMissedIndices.size;
             if (isLastSentence) {
               finalizeCompletion(totalMissedSoFar);
             } else {
               // 次の文へスライド
               setCompletedSentencesMissedCount(totalMissedSoFar);
               setMissedIndices(new Set());
-              setCurrentMistakeIndex(null);
               setCurrentSentenceIdx((prev) => prev + 1);
               setUserInput("");
             }
@@ -817,13 +811,23 @@ export function LongTextTyping({
               >
                 {targetText.split("").map((char, index) => {
                   const isCurrent = index === userInput.length;
-                  const isCurrentMistaken = isCurrent && currentMistakeIndex === index;
                   const wasOnceMissed = missedIndices.has(index);
+
+                  // 未入力状態（Backspaceで戻して消した状態を含む）は黒（char-untyped）
                   let charState = "char-untyped";
+                  let isOrange = false;
+
                   if (index < userInput.length) {
-                    charState = "char-correct";
-                  } else if (isCurrentMistaken) {
-                    charState = "char-incorrect";
+                    const isCharMatch = userInput[index] === char;
+                    if (isCharMatch) {
+                      // 正しく入力された文字：過去にミスした履歴があればオレンジ、一発なら緑
+                      charState = "char-correct";
+                      isOrange = wasOnceMissed;
+                    } else {
+                      // 間違えた文字：たとえ過去にミスした文字（オレンジ）であっても、現在ミス中なので赤！
+                      charState = "char-incorrect";
+                      isOrange = false;
+                    }
                   }
 
                   return (
@@ -831,7 +835,7 @@ export function LongTextTyping({
                       key={index}
                       ref={isCurrent ? activeCharRef : null}
                       className={`typing-char ${charState} ${
-                        wasOnceMissed ? "char-once-missed" : ""
+                        isOrange ? "char-once-missed" : ""
                       } ${char === " " ? "char-space" : ""} ${
                         isCurrent ? "char-active-target" : ""
                       }`}

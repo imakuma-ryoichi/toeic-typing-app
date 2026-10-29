@@ -390,10 +390,12 @@
   color: #34d399;
 }
 
-/* まだ打っていない未来の文字（右から生えてくる文字） */
+/* まだ打っていない未来の文字（Backspaceで消した文字も含む：通常文字色） */
 .typing-char.char-untyped {
-  color: var(--text-muted);
+  color: var(--text-primary);
   opacity: 0.85;
+  background-color: transparent !important;
+  border-bottom: none !important;
 }
 
 /* 現在打つべきターゲット文字 */
@@ -410,17 +412,24 @@
 /* ==========================================================================
    文字色による区別
    - 緑     : 一発で正解した文字 (.char-correct)
-   - オレンジ: 1回以上ミスした後に正しく打ち直した文字 (.char-once-missed)
+   - オレンジ: 1回以上ミスした後に正しく打ち直した文字 (.char-correct.char-once-missed)
    - 赤     : 現在ミスしている文字 (.char-incorrect) - 太文字化して区別
    ========================================================================== */
-.typing-char.char-once-missed.char-correct,
-.typing-char.char-once-missed {
+.typing-char.char-correct {
+  color: #10b981;
+}
+
+[data-theme="slate"] .typing-char.char-correct {
+  color: #34d399;
+}
+
+/* 1回以上ミスした後に正しく打ち直した文字（オレンジ文字） */
+.typing-char.char-correct.char-once-missed {
   color: #ea580c;
   font-weight: 600;
 }
 
-[data-theme="slate"] .typing-char.char-once-missed.char-correct,
-[data-theme="slate"] .typing-char.char-once-missed {
+[data-theme="slate"] .typing-char.char-correct.char-once-missed {
   color: #fb923c;
 }
 
@@ -438,18 +447,18 @@
 
 /* ==========================================================================
    スペース文字の背景色設定
-   - オレンジ背景: 1回以上ミスしたスペース (.char-space.char-once-missed)
+   - オレンジ背景: 1回以上ミスした後に正しく打ち直したスペース (.char-space.char-correct.char-once-missed)
    - 赤背景      : 現在ミス中のスペース (.char-space.char-incorrect) ＆ 太文字
    ========================================================================== */
-.typing-char.char-space.char-once-missed {
+.typing-char.char-space.char-correct.char-once-missed {
   background-color: rgba(234, 88, 12, 0.3) !important;
-  border-bottom: 2px solid #ea580c;
+  border-bottom: 2px solid #ea580c !important;
   border-radius: 3px;
 }
 
-[data-theme="slate"] .typing-char.char-space.char-once-missed {
+[data-theme="slate"] .typing-char.char-space.char-correct.char-once-missed {
   background-color: rgba(251, 146, 60, 0.35) !important;
-  border-bottom-color: #fb923c;
+  border-bottom-color: #fb923c !important;
 }
 
 .typing-char.char-space.char-incorrect {
