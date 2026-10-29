@@ -400,26 +400,17 @@
 }
 
 /* ==========================================================================
-   1回でもミスした箇所（オレンジ背景で常時ハイライト）
-   Backspaceで戻った後や、正しく打ち直した後もオレンジ背景を維持
+   文字色による3段階の区別（背景なし）
+   - 緑   : 一発で正解した文字 (.char-correct)
+   - オレンジ: 1回以上ミスした後に正しく打ち直した文字 (.char-once-missed.char-correct)
+   - 赤   : 現在ミスしている文字 (.char-incorrect)
    ========================================================================== */
-.typing-char.char-once-missed {
-  background-color: rgba(249, 115, 22, 0.28) !important;
-  box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.45);
-}
-
 .typing-char.char-once-missed.char-correct {
-  color: #c2410c;
-  font-weight: 600;
-}
-
-[data-theme="slate"] .typing-char.char-once-missed {
-  background-color: rgba(251, 146, 60, 0.32) !important;
-  box-shadow: inset 0 0 0 1px rgba(251, 146, 60, 0.5);
+  color: #ea580c;
 }
 
 [data-theme="slate"] .typing-char.char-once-missed.char-correct {
-  color: #fdba74;
+  color: #fb923c;
 }
 
 /* ターゲット文字の下に表示されるキャレット */
@@ -619,21 +610,6 @@
   border-radius: 4px;
   padding: 0.15rem 0.45rem;
   color: var(--text-primary);
-}
-
-.missed-legend-chip {
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 0.15rem 0.5rem;
-  border-radius: 4px;
-  background-color: rgba(249, 115, 22, 0.22);
-  color: #c2410c;
-  border: 1px solid rgba(249, 115, 22, 0.4);
-}
-
-[data-theme="slate"] .missed-legend-chip {
-  color: #fdba74;
-  background-color: rgba(251, 146, 60, 0.25);
 }
 
 @media (max-width: 768px) {

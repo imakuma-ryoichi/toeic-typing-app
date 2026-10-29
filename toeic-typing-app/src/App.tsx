@@ -282,12 +282,12 @@ function App() {
               >
                 <div className="genre-item-top">
                   <span className="genre-item-title">
-                    Linux / AI デバッグ系
+                    Linux 系
                   </span>
                   {genre === "linux" && <span className="genre-check">✓</span>}
                 </div>
                 <span className="genre-item-desc">
-                  uv / Python / Docker 等のAIデバッグ解説（source/uv.md）
+                  uv / Python / Docker 等のデバッグ解説（source/uv.md）
                 </span>
               </button>
             </div>

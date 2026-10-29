@@ -72,7 +72,7 @@ export function LongTextTyping({
   const [mistakes, setMistakes] = useState<number>(0);
   const [hasErrorFlash, setHasErrorFlash] = useState<boolean>(false);
 
-  // 1回でもミスした文字インデックスの記録（オレンジ背景表示 & 一発精度算出用）
+  // 1回でもミスした文字インデックスの記録（オレンジ文字表示 & 一発精度算出用）
   const [missedIndices, setMissedIndices] = useState<Set<number>>(new Set());
   const [completedSentencesMissedCount, setCompletedSentencesMissedCount] =
     useState<number>(0);
@@ -449,7 +449,7 @@ export function LongTextTyping({
       <div className="longtext-top-bar">
         <div className="text-selector-group">
           <span className={`genre-indicator-badge genre-${genre}`}>
-            {genre === "toeic" ? "TOEIC" : "Linux / AI"}
+            {genre === "toeic" ? "TOEIC" : "Linux"}
           </span>
           <label htmlFor="text-select" className="text-select-label">
             {tabMeta.selectorLabel}
@@ -534,7 +534,7 @@ export function LongTextTyping({
             <div className="completion-header">
               <h2>{currentText.title} クリア！</h2>
               <p>
-                すべての入力を完了しました。オレンジ背景の箇所は1回以上ミスした文字です。
+                すべての入力を完了しました。
               </p>
             </div>
 
@@ -687,8 +687,6 @@ export function LongTextTyping({
             <span className="kbd-badge">Backspace</span> 1文字戻る
             <span>•</span>
             <span className="kbd-badge">Ctrl + Backspace</span> 単語戻る
-            <span>•</span>
-            <span className="missed-legend-chip">オレンジ背景 = ミス履歴あり</span>
           </div>
           <div className="hint-keys">
             <span className="kbd-badge">Esc</span> 最初から
