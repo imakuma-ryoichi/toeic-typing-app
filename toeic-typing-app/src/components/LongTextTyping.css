@@ -9,7 +9,7 @@
   gap: 1.25rem;
 }
 
-/* 上部コントローラーバー：文章切り替え ＆ 改行オプション ＆ 進捗 ＆ リセット */
+/* コントローラーバー（最下部配置）：文章切り替え ＆ 改行オプション ＆ 進捗 ＆ リセット */
 .longtext-top-bar {
   display: flex;
   align-items: center;
@@ -20,6 +20,10 @@
   background-color: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
+}
+
+.longtext-top-bar.longtext-bottom-bar {
+  margin-top: 0.25rem;
 }
 
 .text-selector-group {
@@ -362,6 +366,12 @@
   min-width: 0.55em;
 }
 
+/* 熟語モード（func3）での熟語間スペースの拡張（視認性向上） */
+.tab-mode-func3 .typing-char.char-space {
+  min-width: 0.85em;
+  margin: 0 1px;
+}
+
 .typing-char.char-space.char-active-target::after {
   content: "␣";
   position: absolute;
@@ -586,39 +596,7 @@
   transform: translateY(-1px);
 }
 
-/* ==========================================================================
-   フッター操作ヒント
-   ========================================================================== */
-.stage-footer-hints {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-subtle);
-  font-size: 0.76rem;
-  color: var(--text-muted);
-}
 
-.hint-keys {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.kbd-badge {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 600;
-  background-color: var(--bg-app);
-  border: 1px solid var(--border-subtle);
-  border-radius: 4px;
-  padding: 0.15rem 0.45rem;
-  color: var(--text-primary);
-}
 
 @media (max-width: 768px) {
   .completion-metrics-grid {

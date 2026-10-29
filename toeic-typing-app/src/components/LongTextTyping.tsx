@@ -98,8 +98,8 @@ export function LongTextTyping({
 
   // 機能1（日本語）はかな文字列をローマ字の揺れ込みで判定する
   const isJapanese = tabMode === "func1";
-  // 日本語は文同士をスペースで区切らない
-  const sentenceSeparator = isJapanese ? "" : " ";
+  // 日本語は文同士をスペースで区切らない。熟語（機能3）は熟語間が明確に分かるようスペースを広く確保
+  const sentenceSeparator = isJapanese ? "" : tabMode === "func3" ? "   " : " ";
 
   // 連続モード用：文セグメント情報（各文の開始・終了位置をマッピング）
   // ※日本語の場合は「かな文字位置」、英語の場合は「入力文字位置」
@@ -492,82 +492,8 @@ export function LongTextTyping({
       : 0;
 
   return (
-    <div className="longtext-container">
-      {/* 上部操作バー */}
-      <div className="longtext-top-bar">
-        <div className="text-selector-group">
-          <span className={`genre-indicator-badge genre-${genre}`}>
-            {genre === "toeic" ? "TOEIC" : "Linux"}
-          </span>
-          <label htmlFor="text-select" className="text-select-label">
-            {tabMeta.selectorLabel}
-          </label>
-          <select
-            id="text-select"
-            className="text-select-dropdown"
-            value={selectedTextIdx}
-            onChange={(e) => handleSelectText(Number(e.target.value))}
-          >
-            {filteredTexts.map((t, i) => (
-              <option key={t.id} value={i}>
-                {i + 1}. {t.title} ({t.sentences.length}
-                {tabMeta.unitLabel})
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* 改行オプション（基本：改行なし） */}
-        <div className="break-mode-group">
-          <span className="mode-label">改行設定:</span>
-          <div className="mode-toggle-pill">
-            <button
-              type="button"
-              className={`mode-btn ${breakMode === "continuous" ? "is-active" : ""}`}
-              onClick={() => handleToggleBreakMode("continuous")}
-              title="全体を1本の帯にして途切れず右から流します（基本）"
-            >
-              なし（連続）
-            </button>
-            <button
-              type="button"
-              className={`mode-btn ${breakMode === "sentence" ? "is-active" : ""}`}
-              onClick={() => handleToggleBreakMode("sentence")}
-              title="1項目・1文ごとに区切って入力します"
-            >
-              あり（区切り）
-            </button>
-          </div>
-        </div>
-
-        <div className="longtext-meta-center">
-          <span className="progress-pill">
-            {tabMeta.unitLabel} {activeSentenceNumber} / {totalSentenceCount}
-          </span>
-          <div className="mini-progress-track" title={`進捗: ${progressPercent}%`}>
-            <div
-              className="mini-progress-fill"
-              style={{ width: `${isCompleted ? 100 : progressPercent}%` }}
-            />
-          </div>
-          <span className="progress-pct-label">
-            {isCompleted ? 100 : progressPercent}%
-          </span>
-        </div>
-
-        <div className="longtext-top-actions">
-          <button
-            type="button"
-            className="btn-secondary-action"
-            onClick={resetSession}
-            title="最初からやり直す (Esc)"
-          >
-            ↻ 最初から
-          </button>
-        </div>
-      </div>
-
-      {/* メインタイピングステージ */}
+    <div className={`longtext-container tab-mode-${tabMode}`}>
+      {/* メインタイピングステージ（目線の位置に合わせて上部に配置） */}
       <div
         className={`typing-stage-card single-line-stage ${
           hasErrorFlash ? "mistake-flash" : ""
@@ -581,9 +507,7 @@ export function LongTextTyping({
             <div className="completion-icon">🎉</div>
             <div className="completion-header">
               <h2>{currentText.title} クリア！</h2>
-              <p>
-                すべての入力を完了しました。
-              </p>
+              <p>すべての入力を完了しました。</p>
             </div>
 
             <div className="completion-metrics-grid">
@@ -662,7 +586,6 @@ export function LongTextTyping({
         ) : (
           /* ==========================================================
              1行だけ・右からどんどん生えてくるストリームタイピングUI
-             （※下部のリアルタイム精度・速度表示は非表示）
              ========================================================== */
           <div className="single-stream-window">
             {/* 上部：現在対応する日本語訳・意味表示 */}
@@ -729,19 +652,81 @@ export function LongTextTyping({
             </div>
           </div>
         )}
+      </div>
 
-        {/* 下部操作案内ヒント */}
-        <div className="stage-footer-hints">
-          <div className="hint-keys">
-            <span>そのままキー入力</span>
-            <span>•</span>
-            <span className="kbd-badge">Backspace</span> 1文字戻る
-            <span>•</span>
-            <span className="kbd-badge">Ctrl + Backspace</span> 単語戻る
+      {/* 最下部の操作・設定バー */}
+      <div className="longtext-top-bar longtext-bottom-bar">
+        <div className="text-selector-group">
+          <span className={`genre-indicator-badge genre-${genre}`}>
+            {genre === "toeic" ? "TOEIC" : "Linux"}
+          </span>
+          <label htmlFor="text-select" className="text-select-label">
+            {tabMeta.selectorLabel}
+          </label>
+          <select
+            id="text-select"
+            className="text-select-dropdown"
+            value={selectedTextIdx}
+            onChange={(e) => handleSelectText(Number(e.target.value))}
+          >
+            {filteredTexts.map((t, i) => (
+              <option key={t.id} value={i}>
+                {i + 1}. {t.title} ({t.sentences.length}
+                {tabMeta.unitLabel})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* 改行オプション（機能4 実践文でのみ表示） */}
+        {tabMode === "func4" && (
+          <div className="break-mode-group">
+            <span className="mode-label">改行設定:</span>
+            <div className="mode-toggle-pill">
+              <button
+                type="button"
+                className={`mode-btn ${breakMode === "continuous" ? "is-active" : ""}`}
+                onClick={() => handleToggleBreakMode("continuous")}
+                title="全体を1本の帯にして途切れず右から流します（基本）"
+              >
+                なし（連続）
+              </button>
+              <button
+                type="button"
+                className={`mode-btn ${breakMode === "sentence" ? "is-active" : ""}`}
+                onClick={() => handleToggleBreakMode("sentence")}
+                title="1文ごとに区切って入力します"
+              >
+                あり（区切り）
+              </button>
+            </div>
           </div>
-          <div className="hint-keys">
-            <span className="kbd-badge">Esc</span> 最初から
+        )}
+
+        <div className="longtext-meta-center">
+          <span className="progress-pill">
+            {tabMeta.unitLabel} {activeSentenceNumber} / {totalSentenceCount}
+          </span>
+          <div className="mini-progress-track" title={`進捗: ${progressPercent}%`}>
+            <div
+              className="mini-progress-fill"
+              style={{ width: `${isCompleted ? 100 : progressPercent}%` }}
+            />
           </div>
+          <span className="progress-pct-label">
+            {isCompleted ? 100 : progressPercent}%
+          </span>
+        </div>
+
+        <div className="longtext-top-actions">
+          <button
+            type="button"
+            className="btn-secondary-action"
+            onClick={resetSession}
+            title="最初からやり直す (Esc)"
+          >
+            ↻ 最初から
+          </button>
         </div>
       </div>
     </div>
