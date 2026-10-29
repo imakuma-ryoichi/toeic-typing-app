@@ -55,6 +55,22 @@ const DEFAULT_GOALS: UserGoals = {
   wpm: 60,
 };
 
+type AnalyticsFilterTabId = "all" | "func1" | "func2" | "func3" | "func4";
+
+interface AnalyticsFilterTabInfo {
+  id: AnalyticsFilterTabId;
+  label: string;
+  subLabel: string;
+}
+
+const ANALYTICS_FILTER_TABS: AnalyticsFilterTabInfo[] = [
+  { id: "all", label: "全体", subLabel: "すべての記録" },
+  { id: "func1", label: "機能1", subLabel: "日本語" },
+  { id: "func2", label: "機能2", subLabel: "単語" },
+  { id: "func3", label: "機能3", subLabel: "熟語" },
+  { id: "func4", label: "機能4", subLabel: "実践文" },
+];
+
 const INITIAL_SESSIONS: SessionRecord[] = [
   {
     id: "init-1",
@@ -71,6 +87,19 @@ const INITIAL_SESSIONS: SessionRecord[] = [
   },
   {
     id: "init-2",
+    timestamp: "本日 11:20",
+    genre: "toeic",
+    tabMode: "func1",
+    modeLabel: "機能1 (日本語)",
+    title: "ビジネスメールの基本挨拶",
+    firstTryAccuracy: 94,
+    normalAccuracy: 98,
+    wpm: 64,
+    keystrokes: 310,
+    mistakes: 5,
+  },
+  {
+    id: "init-3",
     timestamp: "昨日 19:15",
     genre: "linux",
     tabMode: "func4",
@@ -83,7 +112,7 @@ const INITIAL_SESSIONS: SessionRecord[] = [
     mistakes: 18,
   },
   {
-    id: "init-3",
+    id: "init-4",
     timestamp: "昨日 13:28",
     genre: "toeic",
     tabMode: "func3",
@@ -96,7 +125,7 @@ const INITIAL_SESSIONS: SessionRecord[] = [
     mistakes: 11,
   },
   {
-    id: "init-4",
+    id: "init-5",
     timestamp: "3日前 18:10",
     genre: "toeic",
     tabMode: "func4",
@@ -118,6 +147,9 @@ function App() {
   const [analyticsSubView, setAnalyticsSubView] = useState<"summary" | "detail">(
     "summary"
   );
+  // 機能5（記録）の機能別フィルター（全体 / 機能1 / 機能2 / 機能3 / 機能4）
+  const [analyticsFilterTab, setAnalyticsFilterTab] =
+    useState<AnalyticsFilterTabId>("all");
 
   // 目標設定ステート（localStorage永続化）
   const [goals, setGoals] = useState<UserGoals>(() => {
@@ -213,26 +245,47 @@ function App() {
     setSessions((prev) => [record, ...prev]);
   };
 
-  // 統計サマリー計算
+  // 選択中の機能フィルターに応じたセッション一覧
+  const filteredSessions =
+    analyticsFilterTab === "all"
+      ? sessions
+      : sessions.filter((s) => s.tabMode === analyticsFilterTab);
+
+  // 選択中の機能表示ラベル
+  const activeFilterInfo =
+    ANALYTICS_FILTER_TABS.find((t) => t.id === analyticsFilterTab) ||
+    ANALYTICS_FILTER_TABS[0];
+  const scopeLabel =
+    activeFilterInfo.id === "all"
+      ? "全体"
+      : `${activeFilterInfo.label} (${activeFilterInfo.subLabel})`;
+
+  // 統計サマリー計算（選択中の機能に基づいて算出）
   const avgFirstTryAccuracy =
-    sessions.length > 0
+    filteredSessions.length > 0
       ? Math.round(
-          sessions.reduce((sum, s) => sum + s.firstTryAccuracy, 0) /
-            sessions.length
+          filteredSessions.reduce((sum, s) => sum + s.firstTryAccuracy, 0) /
+            filteredSessions.length
         )
       : 0;
   const avgNormalAccuracy =
-    sessions.length > 0
+    filteredSessions.length > 0
       ? Math.round(
-          sessions.reduce((sum, s) => sum + s.normalAccuracy, 0) /
-            sessions.length
+          filteredSessions.reduce((sum, s) => sum + s.normalAccuracy, 0) /
+            filteredSessions.length
         )
       : 0;
   const avgWpm =
-    sessions.length > 0
-      ? Math.round(sessions.reduce((sum, s) => sum + s.wpm, 0) / sessions.length)
+    filteredSessions.length > 0
+      ? Math.round(
+          filteredSessions.reduce((sum, s) => sum + s.wpm, 0) /
+            filteredSessions.length
+        )
       : 0;
-  const totalKeystrokes = sessions.reduce((sum, s) => sum + s.keystrokes, 0);
+  const totalKeystrokes = filteredSessions.reduce(
+    (sum, s) => sum + s.keystrokes,
+    0
+  );
 
   return (
     <div className="app-container" data-theme={theme}>
@@ -599,72 +652,40 @@ function App() {
                機能5：記録サマリー（統計 & グラフ & 目標設定）画面
                ========================================================== */
             <div className="analytics-view">
-              <div className="analytics-header-row">
-                <div className="analytics-header">
-                  <h2>機能5：学習記録 & パフォーマンス分析</h2>
-                  <p>
-                    「一発精度」「普通の精度」「速度(WPM)」の推移と、自身の目標設定を管理するダッシュボードです。
-                  </p>
-                </div>
+              {/* 機能5最上部：上のバーと同じレイアウトで「全体 / 機能1 / 機能2 / 機能3 / 機能4」を選択可能 */}
+              <div className="analytics-filter-ribbon">
+                <nav className="analytics-filter-nav" aria-label="記録対象機能の選択">
+                  {ANALYTICS_FILTER_TABS.map((tab) => {
+                    const isActive = analyticsFilterTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        className={`analytics-filter-tab-btn ${
+                          isActive ? "active" : ""
+                        }`}
+                        onClick={() => setAnalyticsFilterTab(tab.id)}
+                      >
+                        <span className="filter-tab-title">{tab.label}</span>
+                        <span className="filter-tab-sub">{tab.subLabel}</span>
+                      </button>
+                    );
+                  })}
+                </nav>
               </div>
 
-              {/* 自分で設定できる目標設定パネル */}
-              <div className="goals-setting-bar">
-                <div className="goals-bar-title">
-                  <span className="goals-badge">目標設定</span>
-                  <span className="goals-desc">
-                    自分の目標数値を自由に設定できます（自動保存）
-                  </span>
-                </div>
-
-                <div className="goals-inputs-group">
-                  <label className="goal-input-item">
-                    <span className="goal-input-label">一発精度の目標</span>
-                    <div className="goal-input-wrap">
-                      <input
-                        type="number"
-                        min={1}
-                        max={100}
-                        value={goals.firstTryAccuracy}
-                        onChange={(e) =>
-                          handleGoalChange("firstTryAccuracy", e.target.value)
-                        }
-                      />
-                      <span className="goal-unit">%</span>
-                    </div>
-                  </label>
-
-                  <label className="goal-input-item">
-                    <span className="goal-input-label">普通の精度の目標</span>
-                    <div className="goal-input-wrap">
-                      <input
-                        type="number"
-                        min={1}
-                        max={100}
-                        value={goals.normalAccuracy}
-                        onChange={(e) =>
-                          handleGoalChange("normalAccuracy", e.target.value)
-                        }
-                      />
-                      <span className="goal-unit">%</span>
-                    </div>
-                  </label>
-
-                  <label className="goal-input-item">
-                    <span className="goal-input-label">速度 (WPM) の目標</span>
-                    <div className="goal-input-wrap">
-                      <input
-                        type="number"
-                        min={10}
-                        max={300}
-                        value={goals.wpm}
-                        onChange={(e) =>
-                          handleGoalChange("wpm", e.target.value)
-                        }
-                      />
-                      <span className="goal-unit">WPM</span>
-                    </div>
-                  </label>
+              <div className="analytics-header-row">
+                <div className="analytics-header">
+                  <h2>
+                    機能5：学習記録 & パフォーマンス分析
+                    <span className="analytics-current-scope-badge">
+                      {scopeLabel}
+                    </span>
+                  </h2>
+                  <p>
+                    {scopeLabel} の WPM
+                    推移・成長予想曲線および打鍵成績を表示しています。
+                  </p>
                 </div>
               </div>
 
@@ -735,50 +756,66 @@ function App() {
                     {totalKeystrokes.toLocaleString()}
                   </span>
                   <span className="card-caption">
-                    クリア完了: {sessions.length} セット
+                    クリア完了: {filteredSessions.length} セット
                   </span>
                 </div>
               </div>
 
-              {/* 成長予想曲線 & AI統合推論グラフ（一般的データ × 自己成長データ） */}
-              <GrowthForecastPanel sessions={sessions} goals={goals} />
+              {/* 成長予想曲線 & 統合推論グラフ（選択された機能の WPM 推移） */}
+              <GrowthForecastPanel
+                sessions={filteredSessions}
+                goals={goals}
+                scopeLabel={scopeLabel}
+              />
 
               {/* 履歴テーブル */}
               <div className="analytics-history-box">
-                <h3>直近のセッション履歴</h3>
-                <table className="history-table">
-                  <thead>
-                    <tr>
-                      <th>ジャンル / 種類</th>
-                      <th>セット名</th>
-                      <th>一発精度</th>
-                      <th>普通の精度</th>
-                      <th>速度 (WPM)</th>
-                      <th>打鍵数</th>
-                      <th>日時</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sessions.slice(0, 6).map((s) => (
-                      <tr key={s.id}>
-                        <td>
-                          <span className={`genre-mini-tag genre-${s.genre}`}>
-                            {s.genre === "toeic" ? "TOEIC" : "Linux"}
-                          </span>{" "}
-                          <span className="type-tag">{s.modeLabel}</span>
-                        </td>
-                        <td className="session-title-cell">{s.title}</td>
-                        <td className="highlight-cell">
-                          {s.firstTryAccuracy}%
-                        </td>
-                        <td className="normal-acc-cell">{s.normalAccuracy}%</td>
-                        <td>{s.wpm}</td>
-                        <td>{s.keystrokes}</td>
-                        <td>{s.timestamp}</td>
+                <div className="history-header-row">
+                  <h3>直近のセッション履歴（{scopeLabel}）</h3>
+                  <span className="history-count-badge">
+                    {filteredSessions.length} 件
+                  </span>
+                </div>
+
+                {filteredSessions.length === 0 ? (
+                  <div className="empty-history-notice">
+                    まだ {scopeLabel} のプレイ記録がありません。
+                  </div>
+                ) : (
+                  <table className="history-table">
+                    <thead>
+                      <tr>
+                        <th>ジャンル / 種類</th>
+                        <th>セット名</th>
+                        <th>一発精度</th>
+                        <th>普通の精度</th>
+                        <th>速度 (WPM)</th>
+                        <th>打鍵数</th>
+                        <th>日時</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {filteredSessions.slice(0, 6).map((s) => (
+                        <tr key={s.id}>
+                          <td>
+                            <span className={`genre-mini-tag genre-${s.genre}`}>
+                              {s.genre === "toeic" ? "TOEIC" : "Linux"}
+                            </span>{" "}
+                            <span className="type-tag">{s.modeLabel}</span>
+                          </td>
+                          <td className="session-title-cell">{s.title}</td>
+                          <td className="highlight-cell">
+                            {s.firstTryAccuracy}%
+                          </td>
+                          <td className="normal-acc-cell">{s.normalAccuracy}%</td>
+                          <td>{s.wpm}</td>
+                          <td>{s.keystrokes}</td>
+                          <td>{s.timestamp}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
 
                 {/* 成績右下の案内リンク（詳細画面へ画面切り替え） */}
                 <div className="analytics-history-footer">
@@ -787,10 +824,99 @@ function App() {
                     className="analytics-detail-link"
                     onClick={() => setAnalyticsSubView("detail")}
                   >
-                    &gt;&gt; 詳細な記録・成績
+                    &gt;&gt; 詳細な分析（苦手キー・全履歴）
                   </button>
                 </div>
               </div>
+
+              {/* 最下部の詳細設定パネル（目標値のカスタム変更 ＆ データ管理） */}
+              <section className="analytics-advanced-settings-panel">
+                <div className="panel-title-row">
+                  <h3>⚙️ 詳細設定（目標値の変更・データ管理）</h3>
+                  <span className="panel-hint">
+                    自分の目標数値を自由に設定できます（自動保存）
+                  </span>
+                </div>
+
+                <div className="advanced-settings-body">
+                  <div className="goals-inputs-grid">
+                    <label className="goal-input-card">
+                      <span className="goal-input-card-label">一発精度の目標</span>
+                      <div className="goal-input-wrap">
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={goals.firstTryAccuracy}
+                          onChange={(e) =>
+                            handleGoalChange("firstTryAccuracy", e.target.value)
+                          }
+                        />
+                        <span className="goal-unit">%</span>
+                      </div>
+                      <span className="goal-input-card-desc">
+                        1度もミスせず一発で入力できた文字の目標割合
+                      </span>
+                    </label>
+
+                    <label className="goal-input-card">
+                      <span className="goal-input-card-label">普通の精度の目標</span>
+                      <div className="goal-input-wrap">
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={goals.normalAccuracy}
+                          onChange={(e) =>
+                            handleGoalChange("normalAccuracy", e.target.value)
+                          }
+                        />
+                        <span className="goal-unit">%</span>
+                      </div>
+                      <span className="goal-input-card-desc">
+                        総打鍵に対する正解打鍵の目標割合
+                      </span>
+                    </label>
+
+                    <label className="goal-input-card">
+                      <span className="goal-input-card-label">速度 (WPM) の目標</span>
+                      <div className="goal-input-wrap">
+                        <input
+                          type="number"
+                          min={10}
+                          max={300}
+                          value={goals.wpm}
+                          onChange={(e) =>
+                            handleGoalChange("wpm", e.target.value)
+                          }
+                        />
+                        <span className="goal-unit">WPM</span>
+                      </div>
+                      <span className="goal-input-card-desc">
+                        1分間あたりのワード入力スピード目標
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="advanced-settings-actions">
+                    <button
+                      type="button"
+                      className="action-btn-secondary danger"
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            "セッション履歴を初期状態にリセットしますか？"
+                          )
+                        ) {
+                          setSessions(INITIAL_SESSIONS);
+                        }
+                      }}
+                    >
+                      🗑️ 記録ログのリセット
+                    </button>
+                  </div>
+                </div>
+              </section>
             </div>
           )
         ) : (

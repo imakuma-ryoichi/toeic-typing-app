@@ -8,6 +8,8 @@ import {
 interface GrowthForecastPanelProps {
   sessions: SessionRecord[];
   goals: UserGoals;
+  /** 表示対象の機能名（例: 全体 / 機能1 日本語） */
+  scopeLabel?: string;
 }
 
 const METRIC_META: Record<
@@ -34,9 +36,10 @@ const METRIC_META: Record<
 export function GrowthForecastPanel({
   sessions,
   goals,
+  scopeLabel = "全体",
 }: GrowthForecastPanelProps) {
-  const [selectedMetric, setSelectedMetric] =
-    useState<PredictionMetric>("wpm");
+  // 成長予想曲線は WPM のみを対象とする
+  const selectedMetric: PredictionMetric = "wpm";
   const [customBlendPct, setCustomBlendPct] = useState<number | null>(null);
 
   const forecast = useMemo(() => {
@@ -174,30 +177,13 @@ export function GrowthForecastPanel({
       <div className="forecast-top-row">
         <div>
           <div className="forecast-title-line">
-            <h3>成長予想曲線 & 目標到達推論（一般的データ × 自己データ）</h3>
-            <span className="forecast-ai-badge">ベイズ統合推論</span>
+            <h3>WPM 成長予想曲線（{scopeLabel}）</h3>
+            <span className="forecast-ai-badge">一般的データ × 自己データ</span>
           </div>
           <span className="chart-subtitle">
             一般的なタイピング習得曲線とあなたの直近{sessions.length}
             セッションの成長率を掛け合わせて将来の伸びを推論します
           </span>
-        </div>
-
-        <div className="forecast-metric-tabs">
-          {(["wpm", "firstTryAccuracy", "normalAccuracy"] as PredictionMetric[]).map(
-            (m) => (
-              <button
-                key={m}
-                type="button"
-                className={`forecast-metric-btn ${
-                  selectedMetric === m ? "is-active" : ""
-                }`}
-                onClick={() => setSelectedMetric(m)}
-              >
-                {METRIC_META[m].label}
-              </button>
-            )
-          )}
         </div>
       </div>
 
