@@ -4,6 +4,7 @@ import {
   TypingGenre,
   TypingTabMode,
 } from "../data/practicalTexts";
+import { resolveLongestValid, resolveRomaji, defaultRomaji } from "../utils/romaji";
 import "./LongTextTyping.css";
 
 export interface UserGoals {
@@ -95,13 +96,19 @@ export function LongTextTyping({
   const sentences = currentText.sentences;
   const tabMeta = TAB_MODE_LABELS[tabMode];
 
+  // 機能1（日本語）はかな文字列をローマ字の揺れ込みで判定する
+  const isJapanese = tabMode === "func1";
+  // 日本語は文同士をスペースで区切らない
+  const sentenceSeparator = isJapanese ? "" : " ";
+
   // 連続モード用：文セグメント情報（各文の開始・終了位置をマッピング）
+  // ※日本語の場合は「かな文字位置」、英語の場合は「入力文字位置」
   const sentenceSegments = useMemo(() => {
     let offset = 0;
     return sentences.map((s, idx) => {
       const start = offset;
       const end = start + s.text.length;
-      offset = end + 1; // 文同士の区切りスペース分
+      offset = end + sentenceSeparator.length;
       return {
         ...s,
         start,
@@ -109,36 +116,51 @@ export function LongTextTyping({
         index: idx,
       };
     });
-  }, [sentences]);
+  }, [sentences, sentenceSeparator]);
 
-  // 現在のタイピング対象となるテキスト全体の決定
+  // 現在のタイピング対象となる元テキスト（日本語ならかな）の決定
   const fullContinuousText = useMemo(() => {
-    return sentences.map((s) => s.text).join(" ");
-  }, [sentences]);
+    return sentences.map((s) => s.text).join(sentenceSeparator);
+  }, [sentences, sentenceSeparator]);
 
-  const totalTargetChars = useMemo(() => {
-    if (breakMode === "continuous") {
-      return fullContinuousText.length;
-    }
-    return sentences.reduce((sum, s) => sum + s.text.length, 0);
-  }, [breakMode, fullContinuousText.length, sentences]);
-
-  const targetText =
+  const sourceText =
     breakMode === "continuous"
       ? fullContinuousText
       : sentences[currentSentenceIdx]?.text || "";
 
+  // 日本語：入力済み文字列に合わせてローマ字表記を動的に解決
+  const romajiState = useMemo(() => {
+    if (!isJapanese) return null;
+    return resolveLongestValid(sourceText, userInput);
+  }, [isJapanese, sourceText, userInput]);
+
+  // 実際に打鍵するテキスト（日本語は動的ローマ字、英語はそのまま）
+  const targetText = romajiState ? romajiState.romaji : sourceText;
+
+  const totalTargetChars = useMemo(() => {
+    if (isJapanese) {
+      if (breakMode === "continuous") return targetText.length;
+      return sentences.reduce((sum, s) => sum + defaultRomaji(s.text).length, 0);
+    }
+    if (breakMode === "continuous") {
+      return fullContinuousText.length;
+    }
+    return sentences.reduce((sum, s) => sum + s.text.length, 0);
+  }, [isJapanese, breakMode, targetText.length, fullContinuousText.length, sentences]);
+
   // 現在対応する日本語訳と文番号の決定
-  const { currentDisplayTranslation, activeSentenceNumber, totalSentenceCount } =
+  const { currentDisplayTranslation, currentDisplayKana, activeSentenceNumber, totalSentenceCount } =
     useMemo(() => {
       const total = sentences.length;
       if (breakMode === "continuous") {
-        const pos = userInput.length;
+        const pos = romajiState ? romajiState.consumedKana : userInput.length;
         const seg =
-          sentenceSegments.find((s) => pos >= s.start && pos <= s.end) ||
-          sentenceSegments[sentenceSegments.length - 1];
+          sentenceSegments.find((s) =>
+            isJapanese ? pos >= s.start && pos < s.end : pos >= s.start && pos <= s.end
+          ) || sentenceSegments[sentenceSegments.length - 1];
         return {
           currentDisplayTranslation: seg ? seg.translation : "",
+          currentDisplayKana: seg ? seg.text : "",
           activeSentenceNumber: seg ? seg.index + 1 : 1,
           totalSentenceCount: total,
         };
@@ -146,6 +168,7 @@ export function LongTextTyping({
         const sentence = sentences[currentSentenceIdx];
         return {
           currentDisplayTranslation: sentence ? sentence.translation : "",
+          currentDisplayKana: sentence ? sentence.text : "",
           activeSentenceNumber: currentSentenceIdx + 1,
           totalSentenceCount: total,
         };
@@ -155,6 +178,8 @@ export function LongTextTyping({
       sentences,
       sentenceSegments,
       userInput.length,
+      romajiState,
+      isJapanese,
       currentSentenceIdx,
     ]);
 
@@ -289,7 +314,28 @@ export function LongTextTyping({
         }
 
         const expectedChar = targetText[currentLength];
-        const isCorrectKey = e.key === expectedChar;
+        const nextInput = userInput + e.key;
+
+        // 日本語：入力全体がローマ字として有効な接頭辞かどうかで判定（tu/tsu 等の揺れを許容）
+        let isCorrectKey: boolean;
+        let isFinished: boolean;
+        if (isJapanese) {
+          const hasPriorError = romajiState ? romajiState.validLength < userInput.length : false;
+          if (hasPriorError) {
+            isCorrectKey = e.key === expectedChar;
+            isFinished = false;
+          } else {
+            const resolved = resolveRomaji(sourceText, nextInput);
+            isCorrectKey = resolved.valid;
+            isFinished =
+              resolved.valid &&
+              resolved.romaji === nextInput &&
+              resolved.consumedKana >= sourceText.length;
+          }
+        } else {
+          isCorrectKey = e.key === expectedChar;
+          isFinished = nextInput === targetText;
+        }
 
         const nextKeystrokes = keystrokes + 1;
         const nextMistakes = isCorrectKey ? mistakes : mistakes + 1;
@@ -309,11 +355,10 @@ export function LongTextTyping({
           }, 240);
         }
 
-        const nextInput = userInput + e.key;
         setUserInput(nextInput);
 
         // 完答チェック
-        if (nextInput === targetText) {
+        if (isFinished) {
           const finalizeCompletion = (totalUniqueMissed: number) => {
             const finishNow = Date.now();
             setEndTime(finishNow);
@@ -390,6 +435,9 @@ export function LongTextTyping({
     isActive,
     isCompleted,
     targetText,
+    sourceText,
+    isJapanese,
+    romajiState,
     userInput,
     breakMode,
     currentSentenceIdx,
@@ -624,6 +672,9 @@ export function LongTextTyping({
               </span>
               <span className="translation-text">
                 {currentDisplayTranslation || "..."}
+                {isJapanese && currentDisplayKana && (
+                  <span className="translation-kana">{currentDisplayKana}</span>
+                )}
               </span>
             </div>
 

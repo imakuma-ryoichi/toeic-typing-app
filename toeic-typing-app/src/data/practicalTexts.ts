@@ -26,22 +26,22 @@ export const PRACTICAL_TEXTS: PracticalText[] = [
     tabMode: "func1",
     title: "ビジネスメールの基本挨拶",
     category: "TOEIC / 日本語タイピング",
-    description: "日常業務の連絡や資料送付で頻出する日本語フレーズ（ローマ字入力）",
+    description: "日常業務の連絡や資料送付で頻出する日本語フレーズ（ローマ字入力・揺れ対応）",
     sentences: [
       {
-        text: "itsumo osewa ni natte orimasu.",
+        text: "いつもおせわになっております。",
         translation: "いつもお世話になっております。",
       },
       {
-        text: "honjitsu no kaigi no shiryou wo tenpu itashimasu.",
+        text: "ほんじつのかいぎのしりょうをてんぷいたします。",
         translation: "本日の会議の資料を添付いたします。",
       },
       {
-        text: "gokakunin no hodo yoroshiku onegai itashimasu.",
+        text: "ごかくにんのほどよろしくおねがいいたします。",
         translation: "ご確認のほどよろしくお願いいたします。",
       },
       {
-        text: "gohenshin wo omachi shite orimasu.",
+        text: "ごへんしんをおまちしております。",
         translation: "ご返信をお待ちしております。",
       },
     ],
@@ -55,15 +55,15 @@ export const PRACTICAL_TEXTS: PracticalText[] = [
     description: "プロジェクトの進行状況や日程調整に関する日本語フレーズ",
     sentences: [
       {
-        text: "purojekuto wa yotei doori ni shinkou shite orimasu.",
+        text: "ぷろじぇくとはよていどおりにしんこうしております。",
         translation: "プロジェクトは予定通りに進行しております。",
       },
       {
-        text: "raigetsu no tenjikai ni mukete junbi wo susumete imasu.",
+        text: "らいげつのてんじかいにむけてじゅんびをすすめています。",
         translation: "来月の展示会に向けて準備を進めています。",
       },
       {
-        text: "kinyuubi made ni saishuu houkokusho wo teishutsu shimasu.",
+        text: "きんようびまでにさいしゅうほうこくしょをていしゅつします。",
         translation: "金曜日までに最終報告書を提出します。",
       },
     ],
@@ -77,15 +77,15 @@ export const PRACTICAL_TEXTS: PracticalText[] = [
     description: "カスタマーサポートや発送案内に関する日本語フレーズ",
     sentences: [
       {
-        text: "otoiawase itadaki makotoni arigatou gozaimasu.",
+        text: "おといあわせいただきまことにありがとうございます。",
         translation: "お問い合わせいただき誠にありがとうございます。",
       },
       {
-        text: "daigaihin no hassou tetsuzuki wo susumete orimasu.",
+        text: "だいたいひんのはっそうてつづきをすすめております。",
         translation: "代替品の発送手続きを進めております。",
       },
       {
-        text: "fumeina ten ga gozaimashitara oshirase kudasai.",
+        text: "ふめいなてんがございましたらおしらせください。",
         translation: "不明な点がございましたらお知らせください。",
       },
     ],
@@ -316,7 +316,7 @@ export const PRACTICAL_TEXTS: PracticalText[] = [
   },
 
   // ==========================================================================
-  // Linux / AI デバッグ ジャンル - 機能1: 日本語（ローマ字ストリーム）
+  // Linux ジャンル - 機能1: 日本語（ローマ字ストリーム）
   // ==========================================================================
   {
     id: "linux-f1-1",
@@ -324,18 +324,18 @@ export const PRACTICAL_TEXTS: PracticalText[] = [
     tabMode: "func1",
     title: "権限エラーと仮想環境のデバッグ",
     category: "Linux / 日本語タイピング",
-    description: "uv・Python・Docker環境のトラブルシューティング解説（ローマ字入力）",
+    description: "uv・Python・Docker環境のトラブルシューティング解説（ローマ字入力・揺れ対応）",
     sentences: [
       {
-        text: "direkutori no shoyuuken wo chousei suru hitsuyou ga arimasu.",
+        text: "でぃれくとりのしょゆうけんをちょうせいするひつようがあります。",
         translation: "ディレクトリの所有権を調整する必要があります。",
       },
       {
-        text: "pakkeji mei no superumisu ga genin de izon kaiketsu ni shippai shimashita.",
+        text: "ぱっけーじめいのすぺるみすがげんいんでいぞんかいけつにしっぱいしました。",
         translation: "パッケージ名のスペルミスが原因で依存解決に失敗しました。",
       },
       {
-        text: "kankyou wo python 3.11 ni kotei shite saikouchiku shimasu.",
+        text: "かんきょうをpython3.11にこていしてさいこうちくします。",
         translation: "環境をPython 3.11に固定して再構築します。",
       },
     ],
@@ -349,22 +349,22 @@ export const PRACTICAL_TEXTS: PracticalText[] = [
     description: "Device or resource busy エラー発生時のホスト側操作手順",
     sentences: [
       {
-        text: "jikkouchuu no kontena nai kara maunto pointo wa sakujo dekimasen.",
+        text: "じっこうちゅうのこんてなないからまうんとぽいんとはさくじょできません。",
         translation: "実行中のコンテナ内からマウントポイントは削除できません。",
       },
       {
-        text: "ittan kontena wo teishi shite hosuto gawa kara anzen ni sakujo shimasu.",
-        translation: "いったんコンテナを停止してホスト側から安全に削除します。",
+        text: "いったんこんてなをていしして、ほすとがわからあんぜんにさくじょします。",
+        translation: "いったんコンテナを停止して、ホスト側から安全に削除します。",
       },
       {
-        text: "ippan yuuzaa toshite kasou kankyou wo shokika shite kudasai.",
+        text: "いっぱんゆーざーとしてかそうかんきょうをしょきかしてください。",
         translation: "一般ユーザーとして仮想環境を初期化してください。",
       },
     ],
   },
 
   // ==========================================================================
-  // Linux / AI デバッグ ジャンル - 機能2: 単語 (Tech & Debug Vocab)
+  // Linux ジャンル - 機能2: 単語 (Tech & Debug Vocab)
   // ==========================================================================
   {
     id: "linux-f2-1",
@@ -402,13 +402,13 @@ export const PRACTICAL_TEXTS: PracticalText[] = [
   },
 
   // ==========================================================================
-  // Linux / AI デバッグ ジャンル - 機能3: 熟語 (Tech Phrases)
+  // Linux ジャンル - 機能3: 熟語 (Tech Phrases)
   // ==========================================================================
   {
     id: "linux-f3-1",
     genre: "linux",
     tabMode: "func3",
-    title: "AIデバッグ・環境構築の頻出表現",
+    title: "デバッグ・環境構築の頻出表現",
     category: "Linux / 熟語",
     description: "source/uv.md で使われている技術解説・トラブル解消の定型フレーズ",
     sentences: [
@@ -438,7 +438,7 @@ export const PRACTICAL_TEXTS: PracticalText[] = [
   },
 
   // ==========================================================================
-  // Linux / AI デバッグ ジャンル - 機能4: 実践文 (source/uv.md #1〜#6)
+  // Linux ジャンル - 機能4: 実践文 (source/uv.md #1〜#6)
   // ※コマンド部分を除外し、英語の解説散文のみを抽出
   // ==========================================================================
   {

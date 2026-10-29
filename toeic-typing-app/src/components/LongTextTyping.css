@@ -269,11 +269,19 @@
 }
 
 .translation-text {
+  display: flex;
+  flex-direction: column;
   font-size: 1.05rem;
   font-weight: 500;
   color: var(--text-primary);
   line-height: 1.4;
   transition: color 0.15s ease;
+}
+
+.translation-kana {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-muted);
 }
 
 /* ==========================================================================
