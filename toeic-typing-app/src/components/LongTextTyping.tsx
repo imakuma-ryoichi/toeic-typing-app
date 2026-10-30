@@ -32,6 +32,7 @@ interface LongTextTypingProps {
   genre?: TypingGenre;
   tabMode?: TypingTabMode;
   goals?: UserGoals;
+  sessions?: SessionRecord[];
   onSessionComplete?: (record: SessionRecord) => void;
 }
 
@@ -58,6 +59,7 @@ export function LongTextTyping({
   genre = "toeic",
   tabMode = "func4",
   goals = DEFAULT_GOALS,
+  sessions = [],
   onSessionComplete,
 }: LongTextTypingProps) {
   const [selectedTextIdx, setSelectedTextIdx] = useState<number>(0);
@@ -98,8 +100,8 @@ export function LongTextTyping({
 
   // 機能1（日本語）はかな文字列をローマ字の揺れ込みで判定する
   const isJapanese = tabMode === "func1";
-  // 日本語は文同士をスペースで区切らない
-  const sentenceSeparator = isJapanese ? "" : " ";
+  // 日本語は文同士をスペースで区切らない。熟語（機能3）は熟語間が明確に分かるようスペースを広く確保
+  const sentenceSeparator = isJapanese ? "" : tabMode === "func3" ? "   " : " ";
 
   // 連続モード用：文セグメント情報（各文の開始・終了位置をマッピング）
   // ※日本語の場合は「かな文字位置」、英語の場合は「入力文字位置」
@@ -314,35 +316,40 @@ export function LongTextTyping({
         }
 
         const expectedChar = targetText[currentLength];
-        const nextInput = userInput + e.key;
 
-        // 日本語：入力全体がローマ字として有効な接頭辞かどうかで判定（tu/tsu 等の揺れを許容）
-        let isCorrectKey: boolean;
-        let isFinished: boolean;
+        // 日本語（機能1）と英語（機能2〜4）の正誤判定
+        let isCorrectKey = false;
+        let isFinished = false;
+        let nextInput = userInput + e.key;
+
         if (isJapanese) {
-          const hasPriorError = romajiState ? romajiState.validLength < userInput.length : false;
-          if (hasPriorError) {
-            isCorrectKey = e.key === expectedChar;
-            isFinished = false;
-          } else {
-            const resolved = resolveRomaji(sourceText, nextInput);
-            isCorrectKey = resolved.valid;
-            isFinished =
-              resolved.valid &&
-              resolved.romaji === nextInput &&
-              resolved.consumedKana >= sourceText.length;
-          }
+          const testInput = userInput + e.key;
+          const resolved = resolveRomaji(sourceText, testInput);
+          isCorrectKey = resolved.valid;
+          nextInput = testInput;
+          isFinished =
+            resolved.valid &&
+            resolved.romaji === testInput &&
+            resolved.consumedKana >= sourceText.length;
         } else {
           isCorrectKey = e.key === expectedChar;
-          isFinished = nextInput === targetText;
+          // 英語は打鍵した文字でそのまま1文字進み、文字数到達で完了
+          isFinished = nextInput.length === targetText.length;
         }
 
         const nextKeystrokes = keystrokes + 1;
-        const nextMistakes = isCorrectKey ? mistakes : mistakes + 1;
         setKeystrokes(nextKeystrokes);
 
         let updatedMissedIndices = missedIndices;
+        let nextMistakes = mistakes;
+
         if (!isCorrectKey) {
+          // タイプミス発生：
+          // 1. ミスカウント増加
+          // 2. この文字インデックスをミス履歴（オレンジ・一発精度判定用）に追加
+          // 3. 赤フラッシュアニメーション起動
+          // ※間違えたキーでもそのまま次の文字に進む
+          nextMistakes = mistakes + 1;
           setMistakes(nextMistakes);
           updatedMissedIndices = new Set(missedIndices);
           updatedMissedIndices.add(currentLength);
@@ -355,9 +362,10 @@ export function LongTextTyping({
           }, 240);
         }
 
+        // 間違えたキーでもそのまま入力して次へ進める
         setUserInput(nextInput);
 
-        // 完答チェック
+        // 完答チェック（最後まで文字数を打ち切ったときに完了）
         if (isFinished) {
           const finalizeCompletion = (totalUniqueMissed: number) => {
             const finishNow = Date.now();
@@ -491,83 +499,72 @@ export function LongTextTyping({
       ? Math.round((userInput.length / targetText.length) * 100)
       : 0;
 
+  // 結果画面用の WPM 推移データ（同じ機能の過去セッション + 今回の完了セッション）
+  const completionWpmHistory = useMemo(() => {
+    const matched = sessions.filter((s) => s.tabMode === tabMode);
+    const sorted = [...matched].reverse();
+    const pastSubset = sorted.slice(-7);
+    const items = pastSubset.map((s, i) => ({
+      label: `#${i + 1}`,
+      wpm: s.wpm,
+      isCurrent: false,
+    }));
+    items.push({
+      label: "今回",
+      wpm: wpm,
+      isCurrent: true,
+    });
+    return items;
+  }, [sessions, tabMode, wpm]);
+
+  // WPM 推移グラフ SVG 座標計算
+  const chartWidth = 640;
+  const chartHeight = 150;
+  const padLeft = 44;
+  const padRight = 36;
+  const padTop = 22;
+  const padBottom = 26;
+  const plotW = chartWidth - padLeft - padRight;
+  const plotH = chartHeight - padTop - padBottom;
+
+  const wpmVals = completionWpmHistory.map((d) => d.wpm);
+  const minWpm = Math.max(0, Math.min(goals.wpm - 15, ...wpmVals) - 5);
+  const maxWpm = Math.max(goals.wpm + 15, ...wpmVals) + 5;
+  const rangeWpm = Math.max(10, maxWpm - minWpm);
+
+  const getChartX = (idx: number) => {
+    if (completionWpmHistory.length <= 1) return padLeft + plotW / 2;
+    return padLeft + (idx / (completionWpmHistory.length - 1)) * plotW;
+  };
+
+  const getChartY = (val: number) => {
+    const clamped = Math.max(minWpm, Math.min(maxWpm, val));
+    return padTop + plotH - ((clamped - minWpm) / rangeWpm) * plotH;
+  };
+
+  const goalY = getChartY(goals.wpm);
+  const chartPoints = completionWpmHistory.map((d, i) => ({
+    x: getChartX(i),
+    y: getChartY(d.wpm),
+    wpm: d.wpm,
+    label: d.label,
+    isCurrent: d.isCurrent,
+  }));
+
+  const chartPathD = chartPoints
+    .map((pt, i) => `${i === 0 ? "M" : "L"} ${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`)
+    .join(" ");
+
+  const chartAreaD =
+    chartPoints.length > 0
+      ? `${chartPathD} L ${chartPoints[chartPoints.length - 1].x.toFixed(1)} ${(
+          padTop + plotH
+        ).toFixed(1)} L ${chartPoints[0].x.toFixed(1)} ${(padTop + plotH).toFixed(1)} Z`
+      : "";
+
   return (
-    <div className="longtext-container">
-      {/* 上部操作バー */}
-      <div className="longtext-top-bar">
-        <div className="text-selector-group">
-          <span className={`genre-indicator-badge genre-${genre}`}>
-            {genre === "toeic" ? "TOEIC" : "Linux"}
-          </span>
-          <label htmlFor="text-select" className="text-select-label">
-            {tabMeta.selectorLabel}
-          </label>
-          <select
-            id="text-select"
-            className="text-select-dropdown"
-            value={selectedTextIdx}
-            onChange={(e) => handleSelectText(Number(e.target.value))}
-          >
-            {filteredTexts.map((t, i) => (
-              <option key={t.id} value={i}>
-                {i + 1}. {t.title} ({t.sentences.length}
-                {tabMeta.unitLabel})
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* 改行オプション（基本：改行なし） */}
-        <div className="break-mode-group">
-          <span className="mode-label">改行設定:</span>
-          <div className="mode-toggle-pill">
-            <button
-              type="button"
-              className={`mode-btn ${breakMode === "continuous" ? "is-active" : ""}`}
-              onClick={() => handleToggleBreakMode("continuous")}
-              title="全体を1本の帯にして途切れず右から流します（基本）"
-            >
-              なし（連続）
-            </button>
-            <button
-              type="button"
-              className={`mode-btn ${breakMode === "sentence" ? "is-active" : ""}`}
-              onClick={() => handleToggleBreakMode("sentence")}
-              title="1項目・1文ごとに区切って入力します"
-            >
-              あり（区切り）
-            </button>
-          </div>
-        </div>
-
-        <div className="longtext-meta-center">
-          <span className="progress-pill">
-            {tabMeta.unitLabel} {activeSentenceNumber} / {totalSentenceCount}
-          </span>
-          <div className="mini-progress-track" title={`進捗: ${progressPercent}%`}>
-            <div
-              className="mini-progress-fill"
-              style={{ width: `${isCompleted ? 100 : progressPercent}%` }}
-            />
-          </div>
-          <span className="progress-pct-label">
-            {isCompleted ? 100 : progressPercent}%
-          </span>
-        </div>
-
-        <div className="longtext-top-actions">
-          <button
-            type="button"
-            className="btn-secondary-action"
-            onClick={resetSession}
-            title="最初からやり直す (Esc)"
-          >
-            ↻ 最初から
-          </button>
-        </div>
-      </div>
-
-      {/* メインタイピングステージ */}
+    <div className={`longtext-container tab-mode-${tabMode}`}>
+      {/* メインタイピングステージ（目線の位置に合わせて上部に配置） */}
       <div
         className={`typing-stage-card single-line-stage ${
           hasErrorFlash ? "mistake-flash" : ""
@@ -575,15 +572,138 @@ export function LongTextTyping({
       >
         {isCompleted ? (
           /* ==========================================================
-             完了画面（一発精度・普通の精度・WPM・目標達成度を表示）
+             完了画面（左上に「結果」、上部にWPM推移グラフ、下部にメトリクス）
              ========================================================== */
           <div className="completion-container">
-            <div className="completion-icon">🎉</div>
-            <div className="completion-header">
-              <h2>{currentText.title} クリア！</h2>
-              <p>
-                すべての入力を完了しました。
-              </p>
+            {/* 左上に「結果」とだけ記述 */}
+            <div className="completion-top-header">
+              <h2 className="completion-title">結果</h2>
+            </div>
+
+            {/* 上部：WPM の推移グラフ */}
+            <div className="completion-chart-wrapper">
+              <div className="completion-chart-header">
+                <span className="completion-chart-sub">
+                  WPM 打鍵速度の推移（{tabMeta.modeTag}）
+                </span>
+                <span className="completion-chart-legend">
+                  <span className="legend-dot current-dot" /> 今回: {wpm} WPM
+                  <span className="legend-line goal-line" /> 目標: {goals.wpm} WPM
+                </span>
+              </div>
+
+              <div className="completion-svg-box">
+                <svg
+                  viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+                  className="completion-trend-svg"
+                  preserveAspectRatio="xMidYMid meet"
+                >
+                  <defs>
+                    <linearGradient
+                      id="compWpmGrad"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="0%"
+                        stopColor="var(--char-caret)"
+                        stopOpacity="0.22"
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor="var(--char-caret)"
+                        stopOpacity="0.0"
+                      />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Y軸 目標ライン（破線） */}
+                  <line
+                    x1={padLeft}
+                    y1={goalY}
+                    x2={chartWidth - padRight}
+                    y2={goalY}
+                    stroke="#ea580c"
+                    strokeWidth="1.5"
+                    strokeDasharray="4 3"
+                    opacity="0.8"
+                  />
+                  <text
+                    x={chartWidth - padRight + 4}
+                    y={goalY + 3}
+                    className="svg-goal-label"
+                    fill="#ea580c"
+                  >
+                    目標 {goals.wpm}
+                  </text>
+
+                  {/* エリア塗りつぶし */}
+                  {chartAreaD && (
+                    <path d={chartAreaD} fill="url(#compWpmGrad)" />
+                  )}
+
+                  {/* 実績折れ線 */}
+                  <path
+                    d={chartPathD}
+                    fill="none"
+                    stroke="var(--char-caret)"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+
+                  {/* データポイント */}
+                  {chartPoints.map((pt, i) => (
+                    <g key={`pt-${i}`}>
+                      {pt.isCurrent && (
+                        <circle
+                          cx={pt.x}
+                          cy={pt.y}
+                          r="8"
+                          fill="var(--char-caret)"
+                          opacity="0.25"
+                        />
+                      )}
+                      <circle
+                        cx={pt.x}
+                        cy={pt.y}
+                        r={pt.isCurrent ? 5.5 : 3.8}
+                        fill={
+                          pt.isCurrent
+                            ? "var(--char-caret)"
+                            : "var(--bg-card)"
+                        }
+                        stroke="var(--char-caret)"
+                        strokeWidth="2"
+                      />
+                      {/* ポイント上部のWPM数値 */}
+                      <text
+                        x={pt.x}
+                        y={pt.y - 8}
+                        textAnchor="middle"
+                        className={`svg-wpm-label ${
+                          pt.isCurrent ? "is-current-wpm" : ""
+                        }`}
+                      >
+                        {pt.wpm}
+                      </text>
+                      {/* X軸ラベル */}
+                      <text
+                        x={pt.x}
+                        y={chartHeight - 6}
+                        textAnchor="middle"
+                        className={`svg-session-label ${
+                          pt.isCurrent ? "is-current-session" : ""
+                        }`}
+                      >
+                        {pt.label}
+                      </text>
+                    </g>
+                  ))}
+                </svg>
+              </div>
             </div>
 
             <div className="completion-metrics-grid">
@@ -662,7 +782,6 @@ export function LongTextTyping({
         ) : (
           /* ==========================================================
              1行だけ・右からどんどん生えてくるストリームタイピングUI
-             （※下部のリアルタイム精度・速度表示は非表示）
              ========================================================== */
           <div className="single-stream-window">
             {/* 上部：現在対応する日本語訳・意味表示 */}
@@ -693,12 +812,22 @@ export function LongTextTyping({
                 {targetText.split("").map((char, index) => {
                   const isCurrent = index === userInput.length;
                   const wasOnceMissed = missedIndices.has(index);
+
+                  // 未入力状態（Backspaceで戻して消した状態を含む）は黒（char-untyped）
                   let charState = "char-untyped";
+                  let isOrange = false;
+
                   if (index < userInput.length) {
-                    charState =
-                      userInput[index] === char
-                        ? "char-correct"
-                        : "char-incorrect";
+                    const isCharMatch = userInput[index] === char;
+                    if (isCharMatch) {
+                      // 正しく入力された文字：過去にミスした履歴があればオレンジ、一発なら緑
+                      charState = "char-correct";
+                      isOrange = wasOnceMissed;
+                    } else {
+                      // 間違えた文字：たとえ過去にミスした文字（オレンジ）であっても、現在ミス中なので赤！
+                      charState = "char-incorrect";
+                      isOrange = false;
+                    }
                   }
 
                   return (
@@ -706,7 +835,7 @@ export function LongTextTyping({
                       key={index}
                       ref={isCurrent ? activeCharRef : null}
                       className={`typing-char ${charState} ${
-                        wasOnceMissed ? "char-once-missed" : ""
+                        isOrange ? "char-once-missed" : ""
                       } ${char === " " ? "char-space" : ""} ${
                         isCurrent ? "char-active-target" : ""
                       }`}
@@ -729,19 +858,81 @@ export function LongTextTyping({
             </div>
           </div>
         )}
+      </div>
 
-        {/* 下部操作案内ヒント */}
-        <div className="stage-footer-hints">
-          <div className="hint-keys">
-            <span>そのままキー入力</span>
-            <span>•</span>
-            <span className="kbd-badge">Backspace</span> 1文字戻る
-            <span>•</span>
-            <span className="kbd-badge">Ctrl + Backspace</span> 単語戻る
+      {/* 最下部の操作・設定バー */}
+      <div className="longtext-top-bar longtext-bottom-bar">
+        <div className="text-selector-group">
+          <span className={`genre-indicator-badge genre-${genre}`}>
+            {genre === "toeic" ? "TOEIC" : "Linux"}
+          </span>
+          <label htmlFor="text-select" className="text-select-label">
+            {tabMeta.selectorLabel}
+          </label>
+          <select
+            id="text-select"
+            className="text-select-dropdown"
+            value={selectedTextIdx}
+            onChange={(e) => handleSelectText(Number(e.target.value))}
+          >
+            {filteredTexts.map((t, i) => (
+              <option key={t.id} value={i}>
+                {i + 1}. {t.title} ({t.sentences.length}
+                {tabMeta.unitLabel})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* 改行オプション（機能4 実践文でのみ表示） */}
+        {tabMode === "func4" && (
+          <div className="break-mode-group">
+            <span className="mode-label">改行設定:</span>
+            <div className="mode-toggle-pill">
+              <button
+                type="button"
+                className={`mode-btn ${breakMode === "continuous" ? "is-active" : ""}`}
+                onClick={() => handleToggleBreakMode("continuous")}
+                title="全体を1本の帯にして途切れず右から流します（基本）"
+              >
+                なし（連続）
+              </button>
+              <button
+                type="button"
+                className={`mode-btn ${breakMode === "sentence" ? "is-active" : ""}`}
+                onClick={() => handleToggleBreakMode("sentence")}
+                title="1文ごとに区切って入力します"
+              >
+                あり（区切り）
+              </button>
+            </div>
           </div>
-          <div className="hint-keys">
-            <span className="kbd-badge">Esc</span> 最初から
+        )}
+
+        <div className="longtext-meta-center">
+          <span className="progress-pill">
+            {tabMeta.unitLabel} {activeSentenceNumber} / {totalSentenceCount}
+          </span>
+          <div className="mini-progress-track" title={`進捗: ${progressPercent}%`}>
+            <div
+              className="mini-progress-fill"
+              style={{ width: `${isCompleted ? 100 : progressPercent}%` }}
+            />
           </div>
+          <span className="progress-pct-label">
+            {isCompleted ? 100 : progressPercent}%
+          </span>
+        </div>
+
+        <div className="longtext-top-actions">
+          <button
+            type="button"
+            className="btn-secondary-action"
+            onClick={resetSession}
+            title="最初からやり直す (Esc)"
+          >
+            ↻ 最初から
+          </button>
         </div>
       </div>
     </div>

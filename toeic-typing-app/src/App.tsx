@@ -929,17 +929,11 @@ function App() {
             genre={genre}
             tabMode={activeTab as TypingTabMode}
             goals={goals}
+            sessions={sessions}
             onSessionComplete={handleSessionComplete}
           />
         )}
       </main>
-
-      <footer className="app-footer">
-        <div className="footer-hint">
-          左上の「Typing」でジャンル（TOEIC / Linux）切替 •
-          上部リボンの「機能1〜機能5」でモード切替
-        </div>
-      </footer>
     </div>
   );
 }
