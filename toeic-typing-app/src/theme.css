@@ -1,0 +1,66 @@
+/* ==========================================================================
+   TOEIC Typing App - テーマ・フォント設定 (フォールバック)
+   ※ 配色やフォント設定は、プロジェクトルート直下の 【 config/theme.yaml 】 で
+      一元管理されています。色やフォントを変更したい場合は config/theme.yaml を編集してください。
+   ========================================================================== */
+
+:root {
+  /* 一般UI用フォント（日本語・見出し・説明文） */
+  --font-sans: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  /* タイピング表示・英数等幅フォント */
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, Menlo, Monaco, Consolas, monospace;
+
+  /* タイピング文字の表示設定（大きさ・文字間隔・太さ） */
+  --typing-char-font-size: 2rem;
+  --typing-char-letter-spacing: 0.02em;
+  --typing-char-min-width: 0.6em;
+  --typing-space-min-width: 0.55em;
+
+  /* 配色設定: ライトテーマ (Paper) デフォルトフォールバック */
+  --bg-app: #FFFFFF;
+  --bg-card: #F8FAFC;
+  --border-subtle: #E2E8F0;
+  --text-primary: #0F172A;
+  --text-muted: #64748B;
+
+  --ribbon-border: #E2E8F0;
+  --ribbon-hover: rgba(15, 23, 42, 0.06);
+  --ribbon-active-bg: rgba(15, 23, 42, 0.09);
+
+  --char-caret: #2563EB;
+  --char-target-bg: rgba(37, 99, 235, 0.08);
+  --char-correct: #10b981;
+  --char-once-missed: #ea580c;
+  --char-incorrect: #dc2626;
+
+  --char-space-marker-color: var(--char-caret);
+  --char-space-missed-bg: rgba(234, 88, 12, 0.3);
+  --char-space-missed-border: #ea580c;
+  --char-space-incorrect-bg: #dc2626;
+  --char-space-incorrect-color: #ffffff;
+}
+
+[data-theme="slate"] {
+  --bg-app: #1E293B;
+  --bg-card: #0F172A;
+  --border-subtle: #334155;
+  --text-primary: #F8FAFC;
+  --text-muted: #94A3B8;
+
+  --ribbon-border: #334155;
+  --ribbon-hover: rgba(248, 250, 252, 0.09);
+  --ribbon-active-bg: rgba(248, 250, 252, 0.14);
+
+  --char-caret: #38BDF8;
+  --char-target-bg: rgba(56, 189, 248, 0.15);
+  --char-correct: #34d399;
+  --char-once-missed: #fb923c;
+  --char-incorrect: #f87171;
+
+  --char-space-marker-color: var(--char-caret);
+  --char-space-missed-bg: rgba(251, 146, 60, 0.35);
+  --char-space-missed-border: #fb923c;
+  --char-space-incorrect-bg: #ef4444;
+  --char-space-incorrect-color: #ffffff;
+}

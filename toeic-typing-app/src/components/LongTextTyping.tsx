@@ -36,7 +36,15 @@ interface LongTextTypingProps {
   onSessionComplete?: (record: SessionRecord) => void;
 }
 
-export type BreakMode = "continuous" | "sentence";
+function getRandomTextIndex(length: number, previousIndex?: number): number {
+  if (length <= 1) return 0;
+
+  let nextIndex = Math.floor(Math.random() * length);
+  while (nextIndex === previousIndex) {
+    nextIndex = Math.floor(Math.random() * length);
+  }
+  return nextIndex;
+}
 
 const DEFAULT_GOALS: UserGoals = {
   firstTryAccuracy: 90,
@@ -46,12 +54,12 @@ const DEFAULT_GOALS: UserGoals = {
 
 const TAB_MODE_LABELS: Record<
   TypingTabMode,
-  { selectorLabel: string; unitLabel: string; modeTag: string }
+  { modeTag: string }
 > = {
-  func1: { selectorLabel: "日本語テーマ:", unitLabel: "文", modeTag: "機能1 (日本語)" },
-  func2: { selectorLabel: "単語セット:", unitLabel: "語", modeTag: "機能2 (単語)" },
-  func3: { selectorLabel: "熟語セット:", unitLabel: "表現", modeTag: "機能3 (熟語)" },
-  func4: { selectorLabel: "実践文:", unitLabel: "文", modeTag: "機能4 (実践文)" },
+  func1: { modeTag: "機能1 (日本語)" },
+  func2: { modeTag: "機能2 (単語)" },
+  func3: { modeTag: "機能3 (熟語)" },
+  func4: { modeTag: "機能4 (実践文)" },
 };
 
 export function LongTextTyping({
@@ -63,8 +71,6 @@ export function LongTextTyping({
   onSessionComplete,
 }: LongTextTypingProps) {
   const [selectedTextIdx, setSelectedTextIdx] = useState<number>(0);
-  const [breakMode, setBreakMode] = useState<BreakMode>("continuous"); // 基本「改行なし（連続）」
-  const [currentSentenceIdx, setCurrentSentenceIdx] = useState<number>(0);
   const [userInput, setUserInput] = useState<string>("");
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
 
@@ -77,8 +83,6 @@ export function LongTextTyping({
 
   // 1回でもミスした文字インデックスの記録（オレンジ文字表示 & 一発精度算出用）
   const [missedIndices, setMissedIndices] = useState<Set<number>>(new Set());
-  const [completedSentencesMissedCount, setCompletedSentencesMissedCount] =
-    useState<number>(0);
 
   // DOM参照（スクロール計算用）
   const containerRef = useRef<HTMLDivElement>(null);
@@ -100,8 +104,8 @@ export function LongTextTyping({
 
   // 機能1（日本語）はかな文字列をローマ字の揺れ込みで判定する
   const isJapanese = tabMode === "func1";
-  // 日本語は文同士をスペースで区切らない。熟語（機能3）は熟語間が明確に分かるようスペースを広く確保
-  const sentenceSeparator = isJapanese ? "" : tabMode === "func3" ? "   " : " ";
+  // 日本語は文同士をスペースで区切らない。英語（単語・熟語・実践文）は1つの半角スペースで区切る
+  const sentenceSeparator = isJapanese ? "" : " ";
 
   // 連続モード用：文セグメント情報（各文の開始・終了位置をマッピング）
   // ※日本語の場合は「かな文字位置」、英語の場合は「入力文字位置」
@@ -125,10 +129,7 @@ export function LongTextTyping({
     return sentences.map((s) => s.text).join(sentenceSeparator);
   }, [sentences, sentenceSeparator]);
 
-  const sourceText =
-    breakMode === "continuous"
-      ? fullContinuousText
-      : sentences[currentSentenceIdx]?.text || "";
+  const sourceText = fullContinuousText;
 
   // 日本語：入力済み文字列に合わせてローマ字表記を動的に解決
   const romajiState = useMemo(() => {
@@ -141,53 +142,33 @@ export function LongTextTyping({
 
   const totalTargetChars = useMemo(() => {
     if (isJapanese) {
-      if (breakMode === "continuous") return targetText.length;
       return sentences.reduce((sum, s) => sum + defaultRomaji(s.text).length, 0);
     }
-    if (breakMode === "continuous") {
-      return fullContinuousText.length;
-    }
     return sentences.reduce((sum, s) => sum + s.text.length, 0);
-  }, [isJapanese, breakMode, targetText.length, fullContinuousText.length, sentences]);
+  }, [isJapanese, sentences]);
 
-  // 現在対応する日本語訳と文番号の決定
-  const { currentDisplayTranslation, currentDisplayKana, activeSentenceNumber, totalSentenceCount } =
+  // 現在対応する日本語訳の決定
+  const { currentDisplayTranslation, currentDisplayKana } =
     useMemo(() => {
-      const total = sentences.length;
-      if (breakMode === "continuous") {
-        const pos = romajiState ? romajiState.consumedKana : userInput.length;
-        const seg =
-          sentenceSegments.find((s) =>
-            isJapanese ? pos >= s.start && pos < s.end : pos >= s.start && pos <= s.end
-          ) || sentenceSegments[sentenceSegments.length - 1];
-        return {
-          currentDisplayTranslation: seg ? seg.translation : "",
-          currentDisplayKana: seg ? seg.text : "",
-          activeSentenceNumber: seg ? seg.index + 1 : 1,
-          totalSentenceCount: total,
-        };
-      } else {
-        const sentence = sentences[currentSentenceIdx];
-        return {
-          currentDisplayTranslation: sentence ? sentence.translation : "",
-          currentDisplayKana: sentence ? sentence.text : "",
-          activeSentenceNumber: currentSentenceIdx + 1,
-          totalSentenceCount: total,
-        };
-      }
+      const pos = romajiState ? romajiState.consumedKana : userInput.length;
+      const seg =
+        sentenceSegments.find((s) =>
+          isJapanese ? pos >= s.start && pos < s.end : pos >= s.start && pos <= s.end
+        ) || sentenceSegments[sentenceSegments.length - 1];
+      return {
+        currentDisplayTranslation: seg ? seg.translation : "",
+        currentDisplayKana: seg ? seg.text : "",
+      };
     }, [
-      breakMode,
       sentences,
       sentenceSegments,
       userInput.length,
       romajiState,
       isJapanese,
-      currentSentenceIdx,
     ]);
 
   // リセット処理
   const resetSession = useCallback(() => {
-    setCurrentSentenceIdx(0);
     setUserInput("");
     setIsCompleted(false);
     setStartTime(null);
@@ -195,33 +176,21 @@ export function LongTextTyping({
     setKeystrokes(0);
     setMistakes(0);
     setMissedIndices(new Set());
-    setCompletedSentencesMissedCount(0);
     setHasErrorFlash(false);
     setScrollTranslateX(0);
   }, []);
 
-  // ジャンルやタブが切り替わったら先頭アイテムに戻してリセット
+  // ジャンルやタブが切り替わったら、対象範囲からランダムに選んでリセット
   useEffect(() => {
-    setSelectedTextIdx(0);
+    setSelectedTextIdx((previousIndex) =>
+      getRandomTextIndex(filteredTexts.length, previousIndex)
+    );
     resetSession();
-  }, [genre, tabMode, resetSession]);
+  }, [genre, tabMode, filteredTexts.length, resetSession]);
 
-  // テキスト切り替えハンドラ
-  const handleSelectText = (idx: number) => {
-    setSelectedTextIdx(idx);
-    resetSession();
-  };
-
-  // 改行オプション切り替え
-  const handleToggleBreakMode = (mode: BreakMode) => {
-    if (mode === breakMode) return;
-    setBreakMode(mode);
-    resetSession();
-  };
-
-  // 次のテキストへ
+  // 次のテキストへランダムに移動
   const handleNextText = useCallback(() => {
-    const nextIdx = (selectedTextIdx + 1) % filteredTexts.length;
+    const nextIdx = getRandomTextIndex(filteredTexts.length, selectedTextIdx);
     setSelectedTextIdx(nextIdx);
     resetSession();
   }, [selectedTextIdx, filteredTexts.length, resetSession]);
@@ -242,7 +211,7 @@ export function LongTextTyping({
       // 開始時は先頭文字が fixedCursorX に位置する
       setScrollTranslateX(fixedCursorX);
     }
-  }, [userInput, targetText, breakMode]);
+  }, [userInput, targetText]);
 
   // キーボードイベントハンドラ
   useEffect(() => {
@@ -412,24 +381,7 @@ export function LongTextTyping({
             }
           };
 
-          if (breakMode === "continuous") {
-            // 連続モード：全文章完走
-            finalizeCompletion(updatedMissedIndices.size);
-          } else {
-            // 改行あり（文ごと）モード
-            const isLastSentence = currentSentenceIdx + 1 >= sentences.length;
-            const totalMissedSoFar =
-              completedSentencesMissedCount + updatedMissedIndices.size;
-            if (isLastSentence) {
-              finalizeCompletion(totalMissedSoFar);
-            } else {
-              // 次の文へスライド
-              setCompletedSentencesMissedCount(totalMissedSoFar);
-              setMissedIndices(new Set());
-              setCurrentSentenceIdx((prev) => prev + 1);
-              setUserInput("");
-            }
-          }
+          finalizeCompletion(updatedMissedIndices.size);
         }
       }
     };
@@ -447,14 +399,10 @@ export function LongTextTyping({
     isJapanese,
     romajiState,
     userInput,
-    breakMode,
-    currentSentenceIdx,
-    sentences.length,
     startTime,
     keystrokes,
     mistakes,
     missedIndices,
-    completedSentencesMissedCount,
     totalTargetChars,
     genre,
     tabMode,
@@ -480,8 +428,7 @@ export function LongTextTyping({
       : 100;
 
   // 一発精度（全ターゲット文字数のうち、1回もミスしなかった文字の割合）
-  const totalUniqueMissedChars =
-    completedSentencesMissedCount + missedIndices.size;
+  const totalUniqueMissedChars = missedIndices.size;
   const firstTryAccuracy =
     totalTargetChars > 0
       ? Math.max(
@@ -492,12 +439,6 @@ export function LongTextTyping({
           )
         )
       : 100;
-
-  // 進捗率
-  const progressPercent =
-    targetText.length > 0
-      ? Math.round((userInput.length / targetText.length) * 100)
-      : 0;
 
   // 結果画面用の WPM 推移データ（同じ機能の過去セッション + 今回の完了セッション）
   const completionWpmHistory = useMemo(() => {
@@ -860,70 +801,8 @@ export function LongTextTyping({
         )}
       </div>
 
-      {/* 最下部の操作・設定バー */}
+      {/* 最下部にはやり直し操作だけを表示 */}
       <div className="longtext-top-bar longtext-bottom-bar">
-        <div className="text-selector-group">
-          <span className={`genre-indicator-badge genre-${genre}`}>
-            {genre === "toeic" ? "TOEIC" : "Linux"}
-          </span>
-          <label htmlFor="text-select" className="text-select-label">
-            {tabMeta.selectorLabel}
-          </label>
-          <select
-            id="text-select"
-            className="text-select-dropdown"
-            value={selectedTextIdx}
-            onChange={(e) => handleSelectText(Number(e.target.value))}
-          >
-            {filteredTexts.map((t, i) => (
-              <option key={t.id} value={i}>
-                {i + 1}. {t.title} ({t.sentences.length}
-                {tabMeta.unitLabel})
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* 改行オプション（機能4 実践文でのみ表示） */}
-        {tabMode === "func4" && (
-          <div className="break-mode-group">
-            <span className="mode-label">改行設定:</span>
-            <div className="mode-toggle-pill">
-              <button
-                type="button"
-                className={`mode-btn ${breakMode === "continuous" ? "is-active" : ""}`}
-                onClick={() => handleToggleBreakMode("continuous")}
-                title="全体を1本の帯にして途切れず右から流します（基本）"
-              >
-                なし（連続）
-              </button>
-              <button
-                type="button"
-                className={`mode-btn ${breakMode === "sentence" ? "is-active" : ""}`}
-                onClick={() => handleToggleBreakMode("sentence")}
-                title="1文ごとに区切って入力します"
-              >
-                あり（区切り）
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div className="longtext-meta-center">
-          <span className="progress-pill">
-            {tabMeta.unitLabel} {activeSentenceNumber} / {totalSentenceCount}
-          </span>
-          <div className="mini-progress-track" title={`進捗: ${progressPercent}%`}>
-            <div
-              className="mini-progress-fill"
-              style={{ width: `${isCompleted ? 100 : progressPercent}%` }}
-            />
-          </div>
-          <span className="progress-pct-label">
-            {isCompleted ? 100 : progressPercent}%
-          </span>
-        </div>
-
         <div className="longtext-top-actions">
           <button
             type="button"
