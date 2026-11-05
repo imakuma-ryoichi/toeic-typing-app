@@ -19,17 +19,17 @@ const METRIC_META: Record<
   wpm: {
     label: "速度 (WPM)",
     unit: "WPM",
-    color: "var(--char-caret)",
+    color: "var(--chart-wpm, var(--char-caret))",
   },
   firstTryAccuracy: {
     label: "一発精度",
     unit: "%",
-    color: "#F97316",
+    color: "var(--chart-first-try, #F97316)",
   },
   normalAccuracy: {
     label: "普通の精度",
     unit: "%",
-    color: "#10B981",
+    color: "var(--chart-normal-acc, #10B981)",
   },
 };
 
